@@ -922,10 +922,9 @@ async function saveNote(resourceId) {
 
 // --- MESSAGING (Écrire à Marc) ---
 async function openMessages() {
-    // Find admin
-    const { data: admins } = await supabase.from('profiles').select('id, is_admin').eq('is_admin', true).limit(1);
-    const adminId = admins?.[0]?.id;
-    if (!adminId) { alert('Aucun administrateur trouvé.'); return; }
+    // Find admin (Marc)
+    const MARC_ID = 'f0ee9d68-0e34-4aef-87e1-eaf8aed5b882';
+    const adminId = MARC_ID;
 
     // Fetch messages
     const { data: messages } = await supabase
