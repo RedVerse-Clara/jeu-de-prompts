@@ -467,7 +467,7 @@ async function renderNav() {
         </button>
         <button onclick="window.app.openMessages()"
             class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-cyan-600">
-            💬 Marc${unreadBadge}
+            💬 Marc
         </button>`;
 
     // Mobile nav
@@ -496,7 +496,7 @@ async function renderNav() {
             </button>
             <button onclick="window.app.openMessages()"
                 class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-cyan-600">
-                💬 Marc${unreadBadge}
+                💬 Marc
             </button>`;
     }
 }
@@ -2014,8 +2014,21 @@ window.app = {
     editorInsertTag,
     deleteUser,
     openAdminConversation,
-    sendAdminReply
+    sendAdminReply,
+    openEnvelopeMessages
 };
+
+function openEnvelopeMessages() {
+    if (state.isAdmin) {
+        // Admin: open admin console on messages tab
+        adminConsole.classList.remove('hidden');
+        fetchAdminStats();
+        setAdminView('messages');
+    } else {
+        // Student: open conversation with Marc
+        openMessages();
+    }
+}
 
 const legalPages = {
     mentions: `<h1 class="text-2xl font-black text-slate-900 mb-6 tracking-tight">Mentions L\u00e9gales</h1><div class="lesson-content text-sm"><h2>\u00c9diteur du site</h2><p>Le site <strong>Jeu de Prompts</strong> est \u00e9dit\u00e9 par :</p><p><strong>Marc ASSI</strong><br>Entrepreneur individuel (auto-entrepreneur)<br>SIRET : 523 628 279 00029<br>Adresse : 2 rue Georges Charpak, 92160 Antony, France<br>Email : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a><br>Non assujetti \u00e0 la TVA (article 293 B du CGI)</p><h2>Directeur de la publication</h2><p>Marc ASSI</p><h2>H\u00e9bergement</h2><p><strong>GitHub Pages</strong> (fichiers statiques)<br>GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, \u00c9tats-Unis</p><p><strong>Supabase</strong> (base de donn\u00e9es et authentification)<br>Supabase, Inc., 970 Toa Payoh North #07-04, Singapore 318992</p><p><strong>Stripe</strong> (paiements)<br>Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Irlande</p><h2>Propri\u00e9t\u00e9 intellectuelle</h2><p>L\u2019ensemble du contenu de ce site (textes, images, logos, vid\u00e9os, prompts, fiches, structure et design) est prot\u00e9g\u00e9 par le droit d\u2019auteur et reste la propri\u00e9t\u00e9 exclusive de Marc ASSI. Toute reproduction, diffusion ou exploitation, m\u00eame partielle, est strictement interdite sans autorisation \u00e9crite pr\u00e9alable.</p></div>`,
