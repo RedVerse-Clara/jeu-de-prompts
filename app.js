@@ -977,6 +977,7 @@ async function openMessages() {
     // Mark as read
     await supabase.from('private_messages').update({ is_read: true })
         .eq('sender_id', adminId).eq('receiver_id', state.user.id).eq('is_read', false);
+    checkUnreadMessages();
 
     const msgList = (messages || []).map(m => {
         const isMine = m.sender_id === state.user.id;
@@ -1633,6 +1634,8 @@ async function openAdminConversation(partnerId, partnerName) {
     // Mark as read
     await supabase.from('private_messages').update({ is_read: true })
         .eq('sender_id', partnerId).eq('receiver_id', state.user.id).eq('is_read', false);
+    // Refresh envelope badge
+    checkUnreadMessages();
 
     // Fetch messages
     const { data: messages } = await supabase
