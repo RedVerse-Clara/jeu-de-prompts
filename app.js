@@ -136,7 +136,8 @@ async function checkAdmin() {
     try {
         const { data, error } = await supabase.from('profiles').select('is_admin, subscription_status').eq('id', state.user.id).single();
         if (!error && data) {
-            state.isAdmin = data.is_admin;
+            // Double check: is_admin must be true AND user must be Marc
+            state.isAdmin = (data.is_admin === true) && (state.user.id === 'f0ee9d68-0e34-4aef-87e1-eaf8aed5b882');
             state.subscriptionStatus = data.subscription_status || 'inactive';
         }
     } catch (err) {
