@@ -169,7 +169,24 @@ function showSite() {
     if (state.isAdmin) {
         adminAddBtn.classList.remove('hidden');
         adminPanelBtn.classList.remove('hidden');
+        checkPendingUsers();
     }
+}
+
+async function checkPendingUsers() {
+    try {
+        const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('subscription_status', 'inactive')
+            .eq('is_admin', false);
+
+        if (count > 0) {
+            adminPanelBtn.innerHTML = 'Admin <span class="inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full ml-1 notif-pulse">' + count + '</span>';
+        } else {
+            adminPanelBtn.textContent = 'Admin';
+        }
+    } catch(e) {}
 }
 
 function showPendingMessage() {
