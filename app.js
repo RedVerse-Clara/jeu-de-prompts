@@ -171,6 +171,29 @@ function showSite() {
         adminPanelBtn.classList.remove('hidden');
         checkPendingUsers();
     }
+    checkUnreadMessages();
+}
+
+async function checkUnreadMessages() {
+    try {
+        const envelope = document.getElementById('msg-envelope');
+        const badge = document.getElementById('msg-badge');
+        if (!envelope || !badge) return;
+
+        const { count } = await supabase
+            .from('private_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', state.user.id)
+            .eq('is_read', false);
+
+        envelope.classList.remove('hidden');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    } catch(e) {}
 }
 
 async function checkPendingUsers() {
@@ -1442,6 +1465,7 @@ function setAdminView(view) {
         case 'content': renderAdminContent(); break;
         case 'news': renderAdminNews(); break;
         case 'links': renderAdminLinks(); break;
+        case 'messages': renderAdminMessages(); break;
     }
 }
 
@@ -1490,8 +1514,9 @@ async function renderAdminUsers() {
                                     ${u.is_admin ? 'Retirer Admin' : 'Nommer Admin'}
                                 </button>
                                 <button onclick="window.app.toggleSubscription('${escapeAttr(u.id)}', '${u.subscription_status || 'inactive'}')" class="text-xs font-bold ${u.subscription_status === 'active' ? 'text-red-500 hover:underline' : 'text-emerald-600 hover:underline'}">
-                                    ${u.subscription_status === 'active' ? 'Désactiver' : 'Activer'}
+                                    ${u.subscription_status === 'active' ? 'D\u00e9sactiver' : 'Activer'}
                                 </button>
+                                ${!u.is_admin ? '<button onclick="window.app.deleteUser(\'' + escapeAttr(u.id) + '\')" class="text-red-400 hover:text-red-600 hover:underline text-xs font-bold">Supprimer</button>' : ''}
                             </td>
                         </tr>
                     `).join('')}
@@ -1517,6 +1542,159 @@ async function toggleSubscription(id, currentStatus) {
         alert('Erreur: ' + error.message);
     } else {
         renderAdminUsers();
+    }
+}
+
+async function deleteUser(id) {
+    if (!confirm('Supprimer cet utilisateur et toutes ses données ?')) return;
+    // Delete user data from all tables
+    await supabase.from('private_messages').delete().or(`sender_id.eq.${id},receiver_id.eq.${id}`);
+    await supabase.from('comments').delete().eq('user_id', id);
+    await supabase.from('notes').delete().eq('user_id', id);
+    await supabase.from('favorites').delete().eq('user_id', id);
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        renderAdminUsers();
+        fetchAdminStats();
+    }
+}
+
+// --- ADMIN: MESSAGES ---
+async function renderAdminMessages() {
+    adminViewContainer.innerHTML = '<div class="p-20 text-center text-slate-400">Chargement des conversations...</div>';
+
+    // Get all users who have exchanged messages with admin
+    const { data: msgs } = await supabase
+        .from('private_messages')
+        .select('sender_id, receiver_id, content, created_at, is_read')
+        .or(`sender_id.eq.${state.user.id},receiver_id.eq.${state.user.id}`)
+        .order('created_at', { ascending: false });
+
+    // Group by conversation partner
+    const convMap = {};
+    (msgs || []).forEach(m => {
+        const partnerId = m.sender_id === state.user.id ? m.receiver_id : m.sender_id;
+        if (!convMap[partnerId]) {
+            convMap[partnerId] = { lastMsg: m, unread: 0 };
+        }
+        if (m.receiver_id === state.user.id && !m.is_read) {
+            convMap[partnerId].unread++;
+        }
+    });
+
+    // Get partner profiles
+    const partnerIds = Object.keys(convMap);
+    let partners = [];
+    if (partnerIds.length > 0) {
+        const { data } = await supabase.from('profiles').select('id, email').in('id', partnerIds);
+        partners = data || [];
+    }
+
+    if (partners.length === 0) {
+        adminViewContainer.innerHTML = `
+            <h2 class="text-2xl font-black text-slate-900 mb-6">Messages</h2>
+            <div class="text-center py-12 text-slate-400">
+                <div class="text-4xl mb-4 opacity-30">💬</div>
+                <p class="font-medium">Aucune conversation pour le moment.</p>
+            </div>`;
+        return;
+    }
+
+    const convList = partners.map(p => {
+        const conv = convMap[p.id];
+        const preview = conv.lastMsg.content.length > 60 ? conv.lastMsg.content.substring(0, 60) + '...' : conv.lastMsg.content;
+        const dateStr = new Date(conv.lastMsg.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+        return `
+            <button onclick="window.app.openAdminConversation('${escapeAttr(p.id)}', '${escapeAttr(p.email || 'Utilisateur')}')"
+                class="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-indigo-50 transition-all text-left border-b border-slate-50">
+                <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0">
+                    ${(p.email || 'U').charAt(0).toUpperCase()}
+                </div>
+                <div class="flex-grow min-w-0">
+                    <div class="flex justify-between items-center">
+                        <p class="font-bold text-sm text-slate-900 truncate">${escapeHtml(p.email || p.id.substring(0, 8))}</p>
+                        <span class="text-[9px] text-slate-400 flex-shrink-0">${dateStr}</span>
+                    </div>
+                    <p class="text-xs text-slate-500 truncate">${escapeHtml(preview)}</p>
+                </div>
+                ${conv.unread > 0 ? '<span class="w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center flex-shrink-0 notif-pulse">' + conv.unread + '</span>' : ''}
+            </button>`;
+    }).join('');
+
+    adminViewContainer.innerHTML = `
+        <h2 class="text-2xl font-black text-slate-900 mb-6">Messages</h2>
+        <div>${convList}</div>`;
+}
+
+async function openAdminConversation(partnerId, partnerName) {
+    // Mark as read
+    await supabase.from('private_messages').update({ is_read: true })
+        .eq('sender_id', partnerId).eq('receiver_id', state.user.id).eq('is_read', false);
+
+    // Fetch messages
+    const { data: messages } = await supabase
+        .from('private_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${state.user.id})`)
+        .order('created_at', { ascending: true });
+
+    const msgHtml = (messages || []).map(m => {
+        const isMine = m.sender_id === state.user.id;
+        const dateStr = new Date(m.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) + ' ' + new Date(m.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        return `
+            <div class="flex ${isMine ? 'justify-end' : 'justify-start'} group">
+                <div class="max-w-[75%] ${isMine ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100'} border rounded-2xl p-4">
+                    <p class="text-sm text-slate-700 font-medium">${escapeHtml(m.content)}</p>
+                    <span class="text-[9px] text-slate-400 mt-1 block">${dateStr}</span>
+                </div>
+            </div>`;
+    }).join('');
+
+    adminViewContainer.innerHTML = `
+        <div class="flex items-center gap-4 mb-6">
+            <button onclick="window.app.setAdminView('messages')" class="bg-slate-100 p-2 rounded-xl text-slate-400 hover:text-slate-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <h2 class="text-xl font-black text-slate-900">${escapeHtml(partnerName)}</h2>
+        </div>
+        <div id="adminMsgThread" class="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar mb-6 p-2">
+            ${msgHtml || '<p class="text-center text-slate-400 text-sm py-8">Aucun message</p>'}
+        </div>
+        <form onsubmit="window.app.sendAdminReply(event, '${escapeAttr(partnerId)}')" class="flex gap-2">
+            <textarea id="admin-msg-input" required rows="1" placeholder="Votre r\u00e9ponse..."
+                class="flex-grow bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-4 focus:ring-indigo-500/10 resize-none"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit()}"
+                oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+            <button type="submit" class="bg-indigo-600 text-white px-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all">Envoyer</button>
+        </form>`;
+
+    // Auto-scroll
+    const thread = document.getElementById('adminMsgThread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+
+    // Refresh envelope badge
+    checkUnreadMessages();
+}
+
+async function sendAdminReply(e, receiverId) {
+    e.preventDefault();
+    const input = document.getElementById('admin-msg-input');
+    const content = input.value.trim();
+    if (!content) return;
+
+    const { error } = await supabase.from('private_messages').insert({
+        sender_id: state.user.id,
+        receiver_id: receiverId,
+        content: content
+    });
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        const email = (await supabase.from('profiles').select('email').eq('id', receiverId).single()).data?.email || 'Utilisateur';
+        openAdminConversation(receiverId, email);
     }
 }
 
@@ -1833,7 +2011,10 @@ window.app = {
     startPayment,
     toggleSubscription,
     openLegal,
-    editorInsertTag
+    editorInsertTag,
+    deleteUser,
+    openAdminConversation,
+    sendAdminReply
 };
 
 const legalPages = {
