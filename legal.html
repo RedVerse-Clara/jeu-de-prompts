@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Prompts - Informations L&eacute;gales</title>
+    <link rel="icon" type="image/png" href="Logo Jeu de Prompts.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50/50 min-h-screen text-slate-800">
+    <header class="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity no-underline">
+            <img src="Logo Jeu de Prompts.png" alt="Logo" class="h-10 w-auto">
+            <span class="font-black text-slate-900 text-lg tracking-tighter">JEU DE <span class="text-indigo-600">PROMPTS</span></span>
+        </a>
+        <a href="index.html" class="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors no-underline">Retour</a>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-6 py-12">
+        <nav id="legal-nav" class="flex flex-wrap gap-2 mb-10"></nav>
+        <div id="legal-content" class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-8 md:p-12"></div>
+    </main>
+
+    <footer class="py-8 text-center border-t border-slate-100 mt-12">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">&copy; 2025 Jeu de Prompts</p>
+    </footer>
+
+    <script>
+    const pages = {
+        mentions: {
+            title: 'Mentions L\u00e9gales',
+            content: `
+                <h1 class="text-3xl font-black text-slate-900 mb-8 tracking-tight">Mentions L\u00e9gales</h1>
+                <div class="lesson-content text-sm">
+                    <h2>\u00c9diteur du site</h2>
+                    <p>Le site <strong>Jeu de Prompts</strong> est \u00e9dit\u00e9 par :</p>
+                    <p>
+                        <strong>Marc ASSI</strong><br>
+                        Entrepreneur individuel (auto-entrepreneur)<br>
+                        SIRET : 523 628 279 00029<br>
+                        Adresse : 2 rue Georges Charpak, 92160 Antony, France<br>
+                        Email : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a><br>
+                        Non assujetti \u00e0 la TVA (article 293 B du CGI)
+                    </p>
+
+                    <h2>Directeur de la publication</h2>
+                    <p>Marc ASSI</p>
+
+                    <h2>H\u00e9bergement</h2>
+                    <p>
+                        <strong>GitHub Pages</strong> (h\u00e9bergement des fichiers statiques)<br>
+                        GitHub, Inc.<br>
+                        88 Colin P Kelly Jr St, San Francisco, CA 94107, \u00c9tats-Unis
+                    </p>
+                    <p>
+                        <strong>Supabase</strong> (base de donn\u00e9es et authentification)<br>
+                        Supabase, Inc.<br>
+                        970 Toa Payoh North #07-04, Singapore 318992
+                    </p>
+                    <p>
+                        <strong>Stripe</strong> (traitement des paiements)<br>
+                        Stripe Payments Europe, Ltd.<br>
+                        1 Grand Canal Street Lower, Dublin 2, Irlande
+                    </p>
+
+                    <h2>Propri\u00e9t\u00e9 intellectuelle</h2>
+                    <p>L\u2019ensemble du contenu de ce site (textes, images, logos, vid\u00e9os, prompts, fiches, structure et design) est prot\u00e9g\u00e9 par le droit d\u2019auteur et reste la propri\u00e9t\u00e9 exclusive de Marc ASSI. Toute reproduction, diffusion ou exploitation, m\u00eame partielle, est strictement interdite sans autorisation \u00e9crite pr\u00e9alable.</p>
+
+                    <h2>Cr\u00e9dits</h2>
+                    <p>Site con\u00e7u et d\u00e9velopp\u00e9 par Marc ASSI avec l\u2019assistance de Claude (Anthropic).</p>
+                </div>
+            `
+        },
+        confidentialite: {
+            title: 'Politique de Confidentialit\u00e9',
+            content: `
+                <h1 class="text-3xl font-black text-slate-900 mb-8 tracking-tight">Politique de Confidentialit\u00e9</h1>
+                <div class="lesson-content text-sm">
+                    <p><em>Derni\u00e8re mise \u00e0 jour : 17 mars 2025</em></p>
+
+                    <h2>Responsable du traitement</h2>
+                    <p>Marc ASSI, 2 rue Georges Charpak, 92160 Antony.<br>
+                    Contact : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a></p>
+
+                    <h2>Donn\u00e9es collect\u00e9es</h2>
+                    <p>Lors de votre utilisation de Jeu de Prompts, nous collectons :</p>
+                    <ul>
+                        <li><strong>Donn\u00e9es d\u2019inscription :</strong> nom, adresse email, mot de passe (stock\u00e9 sous forme chiffr\u00e9e par Supabase Auth, jamais en clair)</li>
+                        <li><strong>Donn\u00e9es d\u2019utilisation :</strong> fiches consult\u00e9es, notes personnelles, commentaires, messages, favoris</li>
+                        <li><strong>Donn\u00e9es de paiement :</strong> trait\u00e9es exclusivement par Stripe. Nous ne stockons aucune donn\u00e9e bancaire.</li>
+                    </ul>
+
+                    <h2>Finalit\u00e9s du traitement</h2>
+                    <p>Vos donn\u00e9es sont utilis\u00e9es pour :</p>
+                    <ul>
+                        <li>G\u00e9rer votre compte et votre acc\u00e8s \u00e0 la plateforme</li>
+                        <li>Personnaliser votre exp\u00e9rience (progression, notes, favoris)</li>
+                        <li>Permettre la messagerie entre vous et l\u2019administrateur</li>
+                        <li>G\u00e9rer votre abonnement et vos paiements</li>
+                    </ul>
+                    <p>Nous ne vendons, ne louons et ne partageons jamais vos donn\u00e9es personnelles avec des tiers \u00e0 des fins commerciales.</p>
+
+                    <h2>Base l\u00e9gale</h2>
+                    <ul>
+                        <li><strong>Ex\u00e9cution du contrat :</strong> traitement n\u00e9cessaire \u00e0 la fourniture du service (article 6.1.b du RGPD)</li>
+                        <li><strong>Int\u00e9r\u00eat l\u00e9gitime :</strong> am\u00e9lioration du service et s\u00e9curit\u00e9 (article 6.1.f)</li>
+                    </ul>
+
+                    <h2>Sous-traitants</h2>
+                    <ul>
+                        <li><strong>Supabase</strong> (Singapour / AWS EU) : h\u00e9bergement des donn\u00e9es et authentification</li>
+                        <li><strong>Stripe</strong> (Irlande) : traitement des paiements</li>
+                        <li><strong>GitHub</strong> (\u00c9tats-Unis) : h\u00e9bergement des fichiers statiques du site</li>
+                    </ul>
+                    <p>Ces sous-traitants sont conformes au RGPD ou couverts par des clauses contractuelles types (CCT) pour les transferts hors UE.</p>
+
+                    <h2>Dur\u00e9e de conservation</h2>
+                    <ul>
+                        <li><strong>Donn\u00e9es de compte :</strong> conserv\u00e9es tant que votre compte est actif, puis 3 ans apr\u00e8s suppression</li>
+                        <li><strong>Donn\u00e9es de paiement :</strong> conserv\u00e9es par Stripe conform\u00e9ment \u00e0 leurs obligations l\u00e9gales (10 ans pour les pi\u00e8ces comptables)</li>
+                        <li><strong>Commentaires :</strong> conserv\u00e9s jusqu\u2019\u00e0 suppression par l\u2019utilisateur ou l\u2019administrateur</li>
+                    </ul>
+
+                    <h2>Vos droits</h2>
+                    <p>Conform\u00e9ment au R\u00e8glement G\u00e9n\u00e9ral sur la Protection des Donn\u00e9es (RGPD), vous disposez des droits suivants :</p>
+                    <ul>
+                        <li><strong>Droit d\u2019acc\u00e8s :</strong> obtenir une copie de vos donn\u00e9es personnelles</li>
+                        <li><strong>Droit de rectification :</strong> corriger des donn\u00e9es inexactes</li>
+                        <li><strong>Droit de suppression :</strong> demander l\u2019effacement de vos donn\u00e9es</li>
+                        <li><strong>Droit de portabilit\u00e9 :</strong> r\u00e9cup\u00e9rer vos donn\u00e9es dans un format structur\u00e9</li>
+                        <li><strong>Droit d\u2019opposition :</strong> vous opposer au traitement de vos donn\u00e9es</li>
+                    </ul>
+                    <p>Pour exercer ces droits, contactez : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a></p>
+                    <p>En cas de litige, vous pouvez introduire une r\u00e9clamation aupr\u00e8s de la <strong>CNIL</strong> (Commission Nationale de l\u2019Informatique et des Libert\u00e9s), 3 Place de Fontenoy, 75007 Paris.</p>
+
+                    <h2>Cookies</h2>
+                    <p>Jeu de Prompts utilise uniquement des cookies techniques n\u00e9cessaires au fonctionnement du site (session d\u2019authentification Supabase). Aucun cookie publicitaire ou de tra\u00e7age n\u2019est utilis\u00e9.</p>
+                </div>
+            `
+        },
+        cgu: {
+            title: 'Conditions G\u00e9n\u00e9rales d\u2019Utilisation',
+            content: `
+                <h1 class="text-3xl font-black text-slate-900 mb-8 tracking-tight">Conditions G\u00e9n\u00e9rales d\u2019Utilisation</h1>
+                <div class="lesson-content text-sm">
+                    <p><em>Derni\u00e8re mise \u00e0 jour : 17 mars 2025</em></p>
+
+                    <h2>Article 1. Objet</h2>
+                    <p>Les pr\u00e9sentes CGU r\u00e9gissent l\u2019utilisation de la plateforme <strong>Jeu de Prompts</strong>, \u00e9dit\u00e9e par Marc ASSI. Jeu de Prompts est un assistant IA pour formateurs ind\u00e9pendants proposant des fiches pratiques, des prompts, des workflows et un espace communautaire.</p>
+
+                    <h2>Article 2. Acc\u00e8s \u00e0 la plateforme</h2>
+                    <p>L\u2019acc\u00e8s au contenu est r\u00e9serv\u00e9 aux utilisateurs disposant d\u2019un compte valid\u00e9 et d\u2019un abonnement actif. La cr\u00e9ation de compte est gratuite. L\u2019acc\u00e8s au contenu est subordonn\u00e9 \u00e0 la souscription d\u2019un abonnement payant et \u00e0 la validation du compte par l\u2019administrateur.</p>
+
+                    <h2>Article 3. Inscription</h2>
+                    <p>L\u2019utilisateur s\u2019engage \u00e0 fournir des informations exactes lors de son inscription. Chaque compte est personnel et ne peut \u00eatre partag\u00e9. L\u2019utilisateur est responsable de la confidentialit\u00e9 de ses identifiants de connexion.</p>
+
+                    <h2>Article 4. Utilisation du contenu</h2>
+                    <p>Le contenu de la plateforme (fiches, prompts, workflows, vid\u00e9os) est destin\u00e9 \u00e0 un usage personnel et professionnel de l\u2019abonn\u00e9. Il est strictement interdit de :</p>
+                    <ul>
+                        <li>Reproduire, copier ou redistribuer le contenu \u00e0 des tiers</li>
+                        <li>Partager ses identifiants de connexion</li>
+                        <li>Revendre ou exploiter commercialement le contenu sans autorisation</li>
+                        <li>Utiliser la plateforme \u00e0 des fins ill\u00e9gales ou contraires aux bonnes m\u0153urs</li>
+                    </ul>
+
+                    <h2>Article 5. Commentaires et messagerie</h2>
+                    <p>L\u2019utilisateur s\u2019engage \u00e0 respecter les r\u00e8gles de courtoisie dans les espaces de commentaires et de messagerie. Tout contenu injurieux, diffamatoire, discriminatoire ou ill\u00e9gal pourra \u00eatre supprim\u00e9 sans pr\u00e9avis. L\u2019administrateur se r\u00e9serve le droit de suspendre ou supprimer un compte en cas de manquement.</p>
+
+                    <h2>Article 6. Responsabilit\u00e9</h2>
+                    <p>Les fiches et prompts propos\u00e9s sont des outils d\u2019aide. Marc ASSI ne saurait \u00eatre tenu responsable :</p>
+                    <ul>
+                        <li>Des r\u00e9sultats obtenus par l\u2019utilisateur suite \u00e0 l\u2019utilisation des prompts</li>
+                        <li>Des d\u00e9cisions prises sur la base du contenu de la plateforme</li>
+                        <li>Des interruptions temporaires du service li\u00e9es \u00e0 la maintenance ou \u00e0 des circonstances techniques</li>
+                    </ul>
+
+                    <h2>Article 7. Propri\u00e9t\u00e9 intellectuelle</h2>
+                    <p>Tous les contenus de Jeu de Prompts (textes, prompts, fiches, structure, design, logo) sont prot\u00e9g\u00e9s par le droit de la propri\u00e9t\u00e9 intellectuelle et restent la propri\u00e9t\u00e9 exclusive de Marc ASSI.</p>
+
+                    <h2>Article 8. Modification des CGU</h2>
+                    <p>Marc ASSI se r\u00e9serve le droit de modifier les pr\u00e9sentes CGU \u00e0 tout moment. Les utilisateurs seront inform\u00e9s des modifications par une notification sur la plateforme. La poursuite de l\u2019utilisation vaut acceptation des nouvelles conditions.</p>
+
+                    <h2>Article 9. Droit applicable</h2>
+                    <p>Les pr\u00e9sentes CGU sont soumises au droit fran\u00e7ais. En cas de litige, les parties s\u2019efforceront de trouver une solution amiable. \u00c0 d\u00e9faut, les tribunaux comp\u00e9tents du ressort de Nanterre seront seuls comp\u00e9tents.</p>
+                </div>
+            `
+        },
+        cgv: {
+            title: 'Conditions G\u00e9n\u00e9rales de Vente',
+            content: `
+                <h1 class="text-3xl font-black text-slate-900 mb-8 tracking-tight">Conditions G\u00e9n\u00e9rales de Vente</h1>
+                <div class="lesson-content text-sm">
+                    <p><em>Derni\u00e8re mise \u00e0 jour : 17 mars 2025</em></p>
+
+                    <h2>Article 1. Objet</h2>
+                    <p>Les pr\u00e9sentes CGV r\u00e9gissent la vente d\u2019abonnements \u00e0 la plateforme <strong>Jeu de Prompts</strong>, \u00e9dit\u00e9e par Marc ASSI, auto-entrepreneur (SIRET : 523 628 279 00029).</p>
+
+                    <h2>Article 2. Services propos\u00e9s</h2>
+                    <p>L\u2019abonnement donne acc\u00e8s \u00e0 :</p>
+                    <ul>
+                        <li>L\u2019int\u00e9gralit\u00e9 des fiches pratiques et prompts IA pour formateurs</li>
+                        <li>Les nouveaux contenus publi\u00e9s chaque semaine</li>
+                        <li>Les notes personnelles et favoris</li>
+                        <li>La messagerie directe avec Marc ASSI</li>
+                        <li>L\u2019espace commentaires communautaire</li>
+                    </ul>
+
+                    <h2>Article 3. Tarifs</h2>
+                    <p>Deux formules sont propos\u00e9es :</p>
+                    <ul>
+                        <li><strong>Abonnement mensuel :</strong> 9,90 \u20ac TTC / mois</li>
+                        <li><strong>Abonnement annuel :</strong> 99 \u20ac TTC / an (soit 8,25 \u20ac/mois)</li>
+                    </ul>
+                    <p>TVA non applicable (article 293 B du Code G\u00e9n\u00e9ral des Imp\u00f4ts).</p>
+                    <p>Les tarifs peuvent \u00eatre modifi\u00e9s \u00e0 tout moment. Les modifications ne s\u2019appliqueront qu\u2019aux nouveaux abonnements ou aux renouvellements suivant la date de modification.</p>
+
+                    <h2>Article 4. Paiement</h2>
+                    <p>Le paiement est effectu\u00e9 en ligne par carte bancaire via la plateforme s\u00e9curis\u00e9e <strong>Stripe</strong>. Le paiement est exigible imm\u00e9diatement \u00e0 la souscription. Les donn\u00e9es bancaires ne sont jamais stock\u00e9es sur nos serveurs.</p>
+
+                    <h2>Article 5. Dur\u00e9e et renouvellement</h2>
+                    <p>L\u2019abonnement est souscrit pour la dur\u00e9e choisie (mensuelle ou annuelle) et se renouvelle automatiquement par tacite reconduction \u00e0 la date anniversaire, sauf r\u00e9siliation pr\u00e9alable.</p>
+
+                    <h2>Article 6. R\u00e9siliation</h2>
+                    <p>L\u2019utilisateur peut r\u00e9silier son abonnement \u00e0 tout moment :</p>
+                    <ul>
+                        <li>En contactant Marc ASSI par email \u00e0 <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a></li>
+                        <li>Via la messagerie interne de la plateforme</li>
+                    </ul>
+                    <p>La r\u00e9siliation prend effet \u00e0 la fin de la p\u00e9riode en cours. Aucun remboursement au prorata ne sera effectu\u00e9 pour la p\u00e9riode entam\u00e9e.</p>
+
+                    <h2>Article 7. Droit de r\u00e9tractation</h2>
+                    <p>Conform\u00e9ment \u00e0 l\u2019article L221-28 du Code de la consommation, le droit de r\u00e9tractation ne s\u2019applique pas aux contenus num\u00e9riques fournis imm\u00e9diatement apr\u00e8s le paiement, lorsque l\u2019utilisateur a renonc\u00e9 express\u00e9ment \u00e0 son droit de r\u00e9tractation.</p>
+                    <p>N\u00e9anmoins, Marc ASSI s\u2019engage \u00e0 rembourser int\u00e9gralement tout abonn\u00e9 insatisfait qui en fait la demande dans les <strong>14 jours</strong> suivant la souscription.</p>
+
+                    <h2>Article 8. Acc\u00e8s au service</h2>
+                    <p>L\u2019acc\u00e8s au contenu est activ\u00e9 manuellement par Marc ASSI dans un d\u00e9lai de 24 heures apr\u00e8s r\u00e9ception du paiement. Marc ASSI s\u2019efforcera de maintenir la plateforme accessible 24h/24, 7j/7, mais ne peut garantir une disponibilit\u00e9 absolue en raison de contraintes techniques.</p>
+
+                    <h2>Article 9. Responsabilit\u00e9</h2>
+                    <p>Marc ASSI s\u2019engage \u00e0 fournir un contenu de qualit\u00e9. Toutefois, il ne saurait \u00eatre tenu responsable des r\u00e9sultats obtenus par l\u2019utilisateur suite \u00e0 l\u2019application des conseils, prompts et workflows propos\u00e9s.</p>
+
+                    <h2>Article 10. Droit applicable et litiges</h2>
+                    <p>Les pr\u00e9sentes CGV sont soumises au droit fran\u00e7ais. En cas de litige, les parties rechercheront une solution amiable. \u00c0 d\u00e9faut, le litige sera port\u00e9 devant les tribunaux comp\u00e9tents du ressort de Nanterre.</p>
+                    <p>Conform\u00e9ment \u00e0 l\u2019article L612-1 du Code de la consommation, le consommateur peut recourir gratuitement \u00e0 un m\u00e9diateur de la consommation en vue de la r\u00e9solution amiable de tout litige.</p>
+                </div>
+            `
+        }
+    };
+
+    function showPage(slug) {
+        // Update nav
+        document.getElementById('legal-nav').innerHTML = Object.entries(pages).map(([key, val]) =>
+            '<a href="#' + key + '" onclick="showPage(\'' + key + '\'); return false;" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all no-underline ' +
+            (key === slug ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-500 hover:text-indigo-600 border border-slate-200') + '">' +
+            val.title + '</a>'
+        ).join('');
+
+        // Update content
+        document.getElementById('legal-content').innerHTML = pages[slug].content;
+
+        // Update URL hash
+        history.replaceState(null, '', '#' + slug);
+    }
+
+    // Init
+    const hash = window.location.hash.replace('#', '') || 'mentions';
+    showPage(pages[hash] ? hash : 'mentions');
+    </script>
+</body>
+</html>

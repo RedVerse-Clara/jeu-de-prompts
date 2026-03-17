@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Jeu de Prompts - Assistant IA pour formateurs indépendants. Gérez vos cours, prompts et ressources avec l'aide de l'intelligence artificielle.">
+    <title>Jeu de Prompts - Assistant IA pour Formateurs</title>
+    <link rel="icon" type="image/png" href="Logo Jeu de Prompts.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="Logo Jeu de Prompts.png">
+    <noscript>
+        <style>
+            body::before {
+                content: "Ce site nécessite JavaScript pour fonctionner. Veuillez activer JavaScript dans votre navigateur.";
+                display: block;
+                padding: 2rem;
+                text-align: center;
+                font-size: 1.2rem;
+                color: #334155;
+                background: #f8fafc;
+            }
+            #auth-container, #site-container { display: none !important; }
+        </style>
+    </noscript>
+</head>
+
+<body class="flex flex-col min-h-screen bg-slate-50/50 text-slate-800">
+
+    <!-- Success Popup (shown after registration) -->
+    <div id="successPopup" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm p-8 text-center modal-enter">
+            <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 mb-2">Inscription r&eacute;ussie !</h2>
+            <p id="successMsg" class="text-sm text-slate-500 mb-6">Votre compte a &eacute;t&eacute; cr&eacute;&eacute;. Vous pouvez maintenant vous connecter.</p>
+            <button onclick="document.getElementById('successPopup').classList.add('hidden')" class="bg-indigo-600 text-white font-black py-3 px-8 rounded-2xl hover:bg-indigo-700 transition-all active:scale-[0.98]">Compris</button>
+        </div>
+    </div>
+
+    <!-- Auth / Landing Section -->
+    <div id="auth-container" class="hidden">
+        <!-- Hero -->
+        <div class="gradient-hero min-h-screen">
+            <div class="max-w-7xl mx-auto px-6 py-10 lg:py-16">
+                <div class="flex flex-col lg:flex-row items-start gap-10 lg:gap-16">
+
+                    <!-- Left: Photo + Branding -->
+                    <div class="flex-1 w-full">
+                        <div class="relative rounded-[2.5rem] overflow-hidden shadow-2xl mb-8 aspect-[2/1]">
+                            <img src="marc.jpg" alt="Marc ASSI - Fondateur de Jeu de Prompts" class="w-full h-full object-cover object-top">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                            <div class="absolute bottom-0 left-0 p-6 lg:p-8 flex items-end gap-4">
+                                <img src="Logo Jeu de Prompts.png" alt="Logo" class="h-12 lg:h-16 w-auto drop-shadow-lg">
+                                <div class="text-white text-shadow">
+                                    <h1 class="text-2xl lg:text-4xl font-black tracking-tight leading-none">JEU DE PROMPTS</h1>
+                                    <p class="text-sm lg:text-base font-bold opacity-90 mt-1">Assistant IA pour Formateurs</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Social Cards -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                            <a href="https://jeudeprompts.substack.com/" target="_blank" rel="noopener"
+                                class="flex items-center gap-3 bg-white rounded-2xl px-5 py-4 shadow-sm border border-slate-100 hover:shadow-lg hover:border-orange-200 transition-all no-underline">
+                                <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg flex-shrink-0">&#9993;</div>
+                                <div>
+                                    <p class="text-sm font-black text-slate-900">Substack</p>
+                                    <p class="text-xs text-slate-500">Newsletter &amp; articles</p>
+                                </div>
+                            </a>
+                            <a href="https://www.instagram.com/jeu_de_prompts/" target="_blank" rel="noopener"
+                                class="flex items-center gap-3 bg-white rounded-2xl px-5 py-4 shadow-sm border border-slate-100 hover:shadow-lg hover:border-pink-200 transition-all no-underline">
+                                <div class="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-lg flex-shrink-0">&#128247;</div>
+                                <div>
+                                    <p class="text-sm font-black text-slate-900">Instagram</p>
+                                    <p class="text-xs text-slate-500">@jeu_de_prompts</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Right: Auth Form -->
+                    <div class="w-full lg:w-[400px] flex-shrink-0 lg:sticky lg:top-10">
+                        <div class="bg-white rounded-[2.5rem] shadow-2xl p-8 lg:p-10 border border-slate-100">
+                            <div class="text-center mb-6">
+                                <img src="Logo Jeu de Prompts.png" alt="Jeu de Prompts" class="h-16 mx-auto mb-3">
+                                <h2 class="text-lg font-black text-slate-900 tracking-tight">JEU DE <span class="text-indigo-600">PROMPTS</span></h2>
+                                <p class="text-xs text-slate-400 font-medium">Assistant IA pour Formateurs</p>
+                            </div>
+
+                            <!-- Onglets -->
+                            <div class="flex mb-5 bg-slate-100 rounded-xl p-1">
+                                <button id="tab-login" onclick="window.app.switchAuthTab('login')" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all bg-white shadow text-indigo-700">Se connecter</button>
+                                <button id="tab-register" onclick="window.app.switchAuthTab('register')" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all text-slate-500">Cr&eacute;er un compte</button>
+                            </div>
+
+                            <div id="login-error" class="hidden bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-xs font-bold text-center" role="alert"></div>
+
+                            <!-- Login -->
+                            <form id="login-form" class="space-y-3 text-left">
+                                <input type="email" id="login-email" required placeholder="votre@email.com"
+                                    class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm">
+                                <div class="relative">
+                                    <input type="password" id="login-password" required placeholder="Mot de passe"
+                                        class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm pr-12">
+                                    <button type="button" onclick="window.app.togglePwd('login-password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                                        <svg class="eye-open w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <svg class="eye-closed w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                    </button>
+                                </div>
+                                <button type="submit"
+                                    class="w-full bg-indigo-600 text-white font-black py-3.5 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-[0.98]">Se connecter</button>
+                            </form>
+
+                            <!-- Register -->
+                            <form id="register-form" class="space-y-3 text-left hidden">
+                                <input type="text" id="reg-name" required placeholder="Nom complet"
+                                    class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm">
+                                <input type="email" id="reg-email" required placeholder="votre@email.com"
+                                    class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm">
+                                <div class="relative">
+                                    <input type="password" id="reg-password" required placeholder="Mot de passe"
+                                        class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm pr-12"
+                                        oninput="window.app.validatePwd(this.value)">
+                                    <button type="button" onclick="window.app.togglePwd('reg-password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                                        <svg class="eye-open w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <svg class="eye-closed w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                    </button>
+                                </div>
+                                <div id="pw-rules" class="grid grid-cols-2 gap-2 text-[11px] font-bold hidden">
+                                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">8 caract. min</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">1 majuscule</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">1 minuscule</span></div>
+                                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">1 chiffre</span></div>
+                                </div>
+                                <div class="relative">
+                                    <input type="password" id="reg-confirm" required placeholder="Confirmer le mot de passe"
+                                        class="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-sm pr-12">
+                                    <button type="button" onclick="window.app.togglePwd('reg-confirm', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                                        <svg class="eye-open w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <svg class="eye-closed w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                    </button>
+                                </div>
+                                <button type="submit"
+                                    class="w-full bg-indigo-600 text-white font-black py-3.5 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-[0.98]">Cr&eacute;er mon compte</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Que trouveras-tu -->
+            <div class="max-w-5xl mx-auto px-6 pb-16">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-8 lg:p-12">
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-8">Que trouveras-tu sur Jeu de Prompts ?</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+                        <div class="flex items-start gap-3">
+                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>
+                            <div>
+                                <p class="font-black text-slate-900 text-sm">Prompts IA pr&ecirc;ts &agrave; l'emploi</p>
+                                <p class="text-xs text-slate-500">Des prompts test&eacute;s et optimis&eacute;s pour chaque situation de formateur</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>
+                            <div>
+                                <p class="font-black text-slate-900 text-sm">Acquisition &amp; Prospection</p>
+                                <p class="text-xs text-slate-500">Attirer des clients sans prospecter dans le dur, gr&acirc;ce &agrave; l'IA</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>
+                            <div>
+                                <p class="font-black text-slate-900 text-sm">Conception de cours assist&eacute;e</p>
+                                <p class="text-xs text-slate-500">Cr&eacute;er des programmes, supports et exercices en un temps record</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>
+                            <div>
+                                <p class="font-black text-slate-900 text-sm">Offres &amp; Strat&eacute;gie de vente</p>
+                                <p class="text-xs text-slate-500">Structurer vos offres, pages de vente et tunnels de conversion</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>
+                            <div>
+                                <p class="font-black text-slate-900 text-sm">Organisation &amp; Productivit&eacute;</p>
+                                <p class="text-xs text-slate-500">G&eacute;rer son activit&eacute;, ses &eacute;l&egrave;ves et sa relation client avec l'IA</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="w-2.5 h-2.5 bg-indigo-500 rounded-full mt-1.5 shrink-0"></span>
+                            <div>
+                                <p class="font-black text-slate-900 text-sm">Vie de formateur</p>
+                                <p class="text-xs text-slate-500">Conseils, retours d'exp&eacute;rience et workflows du quotidien</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- À propos -->
+            <div class="max-w-5xl mx-auto px-6 pb-16">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-8 lg:p-12 overflow-hidden">
+                    <div class="flex flex-col md:flex-row gap-8 items-start mb-8">
+                        <div class="flex-shrink-0">
+                            <div class="w-28 h-28 rounded-2xl overflow-hidden shadow-md border-2 border-slate-100">
+                                <img src="marc.jpg" alt="Marc ASSI" class="w-full h-full object-cover object-top">
+                            </div>
+                            <p class="text-[8px] font-black text-indigo-500 uppercase tracking-widest text-center mt-2">&Agrave; propos</p>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900 tracking-tight">MARC ASSI</h2>
+                            <p class="text-sm font-bold text-indigo-600 mb-4">Formateur ind&eacute;pendant &amp; passionn&eacute; d'IA</p>
+                            <p class="text-sm text-slate-600 font-medium leading-relaxed">
+                                Formateur ind&eacute;pendant depuis 2017, j'ai deux casquettes : les langues (le libanais, via <strong>A 2 Pas du Liban</strong>) et l'IA. Apr&egrave;s 10 ans de commercial, je me suis fait une promesse : <strong>plus jamais de prospection dans le dur.</strong> J'ai une expertise, elle est pr&eacute;cieuse , c'est au client de me trouver.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 text-sm text-slate-600 font-medium leading-relaxed">
+                        <p>
+                            J'ai mis&eacute; sur le long terme : SEO, YouTube, une communaut&eacute; engag&eacute;e. Pas de course aux vues, mais de la <strong>r&eacute;putation</strong>. C'est long (1 &agrave; 2 ans), mais une fois le cap franchi, &ccedil;a roule.
+                        </p>
+                        <p>
+                            Et puis, fin 2022 : le <strong>&ldquo;BOUM&rdquo;</strong>. L'IA est arriv&eacute;e. Pour le geek que je suis, c'&eacute;tait une r&eacute;v&eacute;lation. J'ai vite compris qu'avec l'IA, on ne se contente pas d'aller plus vite : <strong>on fait le travail de 5 personnes, tout seul.</strong>
+                        </p>
+                        <p>
+                            Ce site n'est pas une vitrine, c'est un <strong>outil</strong>. Je lie ici mes deux exp&eacute;riences pour vous offrir un syst&egrave;me complet :
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4">
+                            <div class="flex items-start gap-3 bg-indigo-50/50 rounded-xl p-4">
+                                <span class="text-indigo-500 text-lg mt-0.5">&#10003;</span>
+                                <p class="text-sm"><strong>Une strat&eacute;gie de formateur qui fonctionne</strong> , attirer sans prospecter, gr&acirc;ce au contenu et &agrave; la visibilit&eacute;</p>
+                            </div>
+                            <div class="flex items-start gap-3 bg-indigo-50/50 rounded-xl p-4">
+                                <span class="text-indigo-500 text-lg mt-0.5">&#10003;</span>
+                                <p class="text-sm"><strong>Des workflows IA concrets</strong> , r&eacute;duire votre charge mentale et tout g&eacute;rer sans vous &eacute;puiser</p>
+                            </div>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-100 rounded-xl p-5 mt-4">
+                            <p class="text-sm text-amber-900 font-bold">
+                                &#128172; Un mot pour ceux qui se lancent : ce ne sera pas facile. Soyez solides, pr&eacute;voyez 6 mois de tr&eacute;sorerie. Mais est-ce que c'est plus simple aujourd'hui avec les outils que je vais vous montrer ? <strong>Carr&eacute;ment.</strong>
+                            </p>
+                            <p class="text-sm text-amber-800 font-black mt-2">Alors on retrousse nos manches, et on s'y met !</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="max-w-3xl mx-auto px-6 pb-16">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-8 text-center">Une seule formule, tout inclus</h2>
+                <div class="bg-white rounded-[2.5rem] shadow-sm border-2 border-indigo-200 p-8 lg:p-10 relative overflow-hidden">
+                    <span class="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Acc&egrave;s complet</span>
+                    <h3 class="text-xl font-black text-slate-900 mb-2">JEU DE PROMPTS</h3>
+                    <p class="text-sm text-slate-500 font-medium mb-6">Tous les prompts, fiches, workflows et mises &agrave; jour. Messagerie directe avec Marc.</p>
+
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                        <button onclick="window.app.startPayment('monthly')"
+                            class="flex-1 bg-indigo-600 text-white text-center font-black py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-[0.98] cursor-pointer">
+                            <span class="text-2xl">9,90&euro;</span><span class="text-sm font-bold opacity-80"> / mois</span>
+                        </button>
+                        <button onclick="window.app.startPayment('yearly')"
+                            class="flex-1 bg-white text-indigo-600 text-center font-black py-4 rounded-2xl border-2 border-indigo-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer relative">
+                            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase">-17%</span>
+                            <span class="text-2xl">99&euro;</span><span class="text-sm font-bold opacity-70"> / an</span>
+                        </button>
+                    </div>
+
+                    <details class="text-sm text-slate-600">
+                        <summary class="font-bold text-indigo-600 cursor-pointer flex items-center gap-1 text-xs uppercase tracking-wide">+ de d&eacute;tails</summary>
+                        <ul class="mt-3 space-y-2 pl-4 text-xs font-medium">
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Acc&egrave;s &agrave; toutes les fiches et prompts</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Nouveaux contenus chaque semaine</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Notes personnelles et favoris</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Messagerie directe avec Marc</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Espace commentaires communautaire</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Annulation &agrave; tout moment</li>
+                        </ul>
+                    </details>
+
+                    <p class="text-[10px] text-slate-400 mt-4 text-center">Paiement s&eacute;curis&eacute; par Stripe.</p>
+                </div>
+            </div>
+
+            <!-- Landing footer -->
+            <footer class="py-8 text-center border-t border-slate-200/50">
+                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+                    &copy; 2025 Jeu de Prompts , Marc ASSI
+                </p>
+                <div class="flex flex-wrap justify-center gap-4 mt-3">
+                    <a href="#" onclick="window.app.openLegal('mentions'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">Mentions L&eacute;gales</a>
+                    <a href="#" onclick="window.app.openLegal('confidentialite'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">Confidentialit&eacute;</a>
+                    <a href="#" onclick="window.app.openLegal('cgu'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">CGU</a>
+                    <a href="#" onclick="window.app.openLegal('cgv'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">CGV</a>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Main Site Section -->
+    <div id="site-container" class="hidden">
+        <header role="banner"
+            class="bg-white/80 border-b shadow-sm sticky top-0 z-50 lg:static lg:backdrop-blur-none backdrop-blur-xl px-3 lg:px-5 py-2 flex items-center gap-3 overflow-hidden">
+            <a href="#" onclick="window.app.goHome(); return false;" aria-label="Jeu de Prompts - Accueil" class="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
+                <img src="Logo Jeu de Prompts.png" alt="Logo" class="h-8 w-auto">
+                <span class="hidden 2xl:block font-black text-slate-900 text-sm tracking-tighter whitespace-nowrap">
+                    JEU DE <span class="text-indigo-600">PROMPTS</span>
+                </span>
+            </a>
+            <nav id="category-nav" role="navigation" aria-label="Menu principal"
+                class="hidden xl:flex items-center gap-0.5 flex-1 min-w-0">
+            </nav>
+            <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
+                <div id="user-info" class="text-right hidden lg:block">
+                    <p id="user-display-name" class="text-[10px] font-black text-slate-700 leading-none"></p>
+                    <p id="user-display-id" class="text-[8px] font-bold text-slate-400 uppercase mt-0.5"></p>
+                </div>
+                <button id="admin-panel-btn"
+                    class="hidden bg-slate-900 text-white px-2.5 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md whitespace-nowrap">
+                    Admin
+                </button>
+                <button id="settings-btn" aria-label="Param&egrave;tres" onclick="window.app.openSettings()"
+                    class="bg-slate-50 text-slate-400 p-1.5 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+                </button>
+                <button id="logout-btn" aria-label="Se d&eacute;connecter"
+                    class="bg-slate-50 text-slate-400 p-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd"
+                            d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Menu mobile horizontal scrollable -->
+        <nav id="mobile-category-nav" role="navigation" aria-label="Menu mobile"
+            class="xl:hidden sticky top-[52px] z-40 bg-white border-b border-slate-100 overflow-x-auto scroll-hint-right custom-scrollbar relative">
+            <div class="flex gap-1 p-2 px-4 min-w-max">
+            </div>
+        </nav>
+
+        <main class="w-full px-4 lg:px-6 py-4 lg:py-6 flex flex-col xl:flex-row gap-4 lg:gap-5">
+            <!-- Col 1: News + Liens utiles -->
+            <div class="w-full xl:w-48 flex-shrink-0 space-y-4 hidden xl:block">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b">
+                        <h4 class="font-black text-[9px] uppercase tracking-widest text-slate-500">📢 News</h4>
+                    </div>
+                    <div id="news-list" class="p-3 space-y-2 text-sm font-medium max-h-[35vh] overflow-y-auto custom-scrollbar">
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b">
+                        <h4 class="font-black text-[9px] uppercase tracking-widest text-slate-500">🔗 Liens utiles</h4>
+                    </div>
+                    <div id="links-list" class="p-1.5 space-y-0.5">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Col 2: Recherche + Missions -->
+            <div class="w-full xl:w-56 flex-shrink-0 space-y-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
+                    <div class="relative group">
+                        <label for="resource-search" class="sr-only">Rechercher une fiche</label>
+                        <input type="text" id="resource-search" placeholder="Pose ta question..."
+                            class="w-full bg-slate-50 border-none rounded-lg py-2.5 pl-9 pr-4 text-xs font-semibold focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-700">
+                        <span class="absolute left-2.5 top-2 text-[10px] font-black text-indigo-400 opacity-60" aria-hidden="true">🤖</span>
+                    </div>
+                </div>
+                <!-- AI Search Results -->
+                <div id="ai-search-box" class="hidden bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden"></div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden sticky top-14 lg:top-4">
+                    <div id="resource-list-header"
+                        class="p-4 bg-slate-50/50 border-b font-black text-[9px] uppercase text-slate-400 tracking-[0.2em] flex justify-between items-center">
+                        Missions
+                        <button id="admin-add-resource-btn"
+                            class="hidden bg-indigo-600 text-white p-1.5 rounded-lg hover:bg-indigo-700 transition-all"
+                            title="Ajouter une fiche" aria-label="Ajouter une fiche">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="resource-list" role="list" class="max-h-[50vh] overflow-y-auto custom-scrollbar text-sm font-medium">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resource Content Area -->
+            <div class="flex-grow min-w-0">
+                <div id="loading-spinner" class="hidden flex flex-col items-center justify-center p-24 text-slate-400">
+                    <div
+                        class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4">
+                    </div>
+                    <p class="font-black uppercase tracking-widest text-[10px]">Chargement...</p>
+                </div>
+                <div id="resource-display" class="space-y-8 hidden">
+                </div>
+                <div id="empty-state"
+                    class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-12 lg:p-20 text-center">
+                    <div class="text-6xl mb-8 opacity-20" aria-hidden="true">🚀</div>
+                    <h2 class="text-2xl font-black text-slate-900 mb-3 tracking-tight">S&eacute;lectionnez une mission</h2>
+                    <p class="text-slate-500 font-medium text-sm">Choisissez une fiche dans le menu pour commencer.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Admin Console Section (Hidden by default) -->
+        <div id="admin-console" class="hidden fixed inset-0 z-[60] bg-slate-50 overflow-y-auto px-8 py-10">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-12">
+                    <div>
+                        <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">Console <span
+                                class="text-indigo-600">Admin</span></h1>
+                        <p class="text-slate-500 font-medium">Gestion globale de l'Académie Jeu de Prompts</p>
+                    </div>
+                    <button id="close-admin-btn"
+                        class="bg-white border text-slate-400 p-4 rounded-2xl hover:text-slate-900 transition-all shadow-sm font-black">
+                        Quitter la console ✕
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Élèves inscrits
+                        </p>
+                        <h3 id="stat-users" class="text-3xl font-black text-slate-900">...</h3>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fiches actives
+                        </p>
+                        <h3 id="stat-resources" class="text-3xl font-black text-slate-900">...</h3>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm text-indigo-600">
+                        <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Modules</p>
+                        <h3 id="stat-categories" class="text-3xl font-black">...</h3>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total News</p>
+                        <h3 id="stat-news" class="text-3xl font-black text-slate-900">...</h3>
+                    </div>
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-10">
+                    <!-- Admin Sidebar -->
+                    <div class="w-full lg:w-64 flex-shrink-0 space-y-2">
+                        <button onclick="window.app.setAdminView('users')"
+                            class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 active-admin-nav"
+                            data-view="users">
+                            <span aria-hidden="true">👥</span> Élèves
+                        </button>
+                        <button onclick="window.app.setAdminView('content')"
+                            class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 text-slate-500"
+                            data-view="content">
+                            <span aria-hidden="true">📚</span> Fiches & Missions
+                        </button>
+                        <button onclick="window.app.setAdminView('news')"
+                            class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 text-slate-500"
+                            data-view="news">
+                            <span aria-hidden="true">📢</span> Actualités
+                        </button>
+                        <button onclick="window.app.setAdminView('links')"
+                            class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 text-slate-500"
+                            data-view="links">
+                            <span aria-hidden="true">🔗</span> Liens utiles
+                        </button>
+                    </div>
+
+                    <!-- Admin Content Area -->
+                    <div
+                        class="flex-grow bg-white rounded-[3.5rem] border border-slate-200 shadow-sm p-10 min-h-[60vh]">
+                        <div id="admin-view-container">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Editor Modal -->
+    <div id="editor-modal"
+        class="hidden fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden animate-fade-in flex flex-col">
+            <div class="p-8 border-b flex justify-between items-center shrink-0">
+                <h2 id="modal-title" class="text-2xl font-black text-slate-900">Éditer la fiche</h2>
+                <button onclick="document.getElementById('editor-modal').classList.add('hidden')"
+                    class="text-slate-400 hover:text-slate-900" aria-label="Fermer">✕</button>
+            </div>
+            <form id="resource-form" class="p-8 space-y-6 overflow-y-auto">
+                <input type="hidden" id="edit-resource-id">
+                <div>
+                    <label for="edit-title" class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Titre de
+                        la fiche</label>
+                    <input type="text" id="edit-title" required
+                        class="w-full px-6 py-4 border rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Contenu</label>
+                    <div id="editor-toolbar">
+                        <span class="ql-formats">
+                            <select class="ql-header">
+                                <option value="1">Titre 1</option>
+                                <option value="2">Titre 2</option>
+                                <option value="3">Titre 3</option>
+                                <option selected>Normal</option>
+                            </select>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-bold"></button>
+                            <button class="ql-italic"></button>
+                            <button class="ql-underline"></button>
+                            <button class="ql-strike"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <select class="ql-color"></select>
+                            <select class="ql-background"></select>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-list" value="ordered"></button>
+                            <button class="ql-list" value="bullet"></button>
+                            <button class="ql-indent" value="-1"></button>
+                            <button class="ql-indent" value="+1"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <select class="ql-align"></select>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-blockquote"></button>
+                            <button class="ql-code-block"></button>
+                            <button class="ql-divider" title="Ligne de séparation">
+                                <svg viewBox="0 0 18 18" width="18" height="18"><line x1="2" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            </button>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-link"></button>
+                            <button class="ql-image"></button>
+                            <button class="ql-video"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-clean"></button>
+                        </span>
+                    </div>
+                    <!-- Custom formatting buttons -->
+                    <div id="custom-editor-toolbar" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 border-x border-slate-200">
+                        <button type="button" onclick="window.app.editorInsertTag('[hl]','[/hl]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-all" title="Surlignage">Surligner</button>
+                        <button type="button" onclick="window.app.editorInsertTag('[s]','[/s]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-all line-through" title="Barr&eacute;">Barr&eacute;</button>
+                        <button type="button" onclick="window.app.editorInsertTag('[hr]','')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-all" title="Ligne horizontale">Ligne</button>
+                        <button type="button" onclick="window.app.editorInsertTag('[spoiler]','[/spoiler]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-indigo-100 text-indigo-600 rounded-md hover:bg-indigo-200 transition-all" title="Spoiler">Spoiler</button>
+                    </div>
+                    <div id="edit-content"></div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="document.getElementById('editor-modal').classList.add('hidden')"
+                        class="px-8 py-4 text-slate-500 font-bold">Annuler</button>
+                    <button type="submit"
+                        class="bg-indigo-600 text-white font-black px-10 py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="imageLightbox" class="fixed inset-0 z-[200] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out" onclick="closeLightbox()">
+        <img id="lightboxImg" src="" alt="" class="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl lightbox-enter" onclick="event.stopPropagation()">
+    </div>
+
+    <!-- Footer -->
+    <footer id="site-footer" class="hidden mt-16 py-8 border-t border-slate-100 text-center">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+            &copy; 2026 Jeu de Prompts , Assistant IA pour Formateurs
+        </p>
+        <div class="flex flex-wrap justify-center gap-4 mt-4">
+            <a href="#" onclick="window.app.openLegal('mentions'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">Mentions L&eacute;gales</a>
+            <a href="#" onclick="window.app.openLegal('confidentialite'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">Confidentialit&eacute;</a>
+            <a href="#" onclick="window.app.openLegal('cgu'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">CGU</a>
+            <a href="#" onclick="window.app.openLegal('cgv'); return false;" class="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-widest no-underline">CGV</a>
+        </div>
+    </footer>
+
+    <script>
+    // Lightbox
+    function openLightbox(src, alt) {
+        var lb = document.getElementById('imageLightbox');
+        document.getElementById('lightboxImg').src = src;
+        document.getElementById('lightboxImg').alt = alt || '';
+        lb.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+        document.getElementById('imageLightbox').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    // Escape key closes modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeLightbox();
+            var editorModal = document.getElementById('editor-modal');
+            if (editorModal && !editorModal.classList.contains('hidden')) editorModal.classList.add('hidden');
+            var adminConsole = document.getElementById('admin-console');
+            if (adminConsole && !adminConsole.classList.contains('hidden')) adminConsole.classList.add('hidden');
+        }
+    });
+    </script>
+    <script src="app.js" type="module"></script>
+    <script defer src="toc.js"></script>
+    <script defer src="pwa.js"></script>
+</body>
+
+</html>

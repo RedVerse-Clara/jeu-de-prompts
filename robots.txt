@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /uploads/
+Disallow: /config.php
+Disallow: /actions.php
+Disallow: /upload.php
+
+Sitemap: /sitemap.xml

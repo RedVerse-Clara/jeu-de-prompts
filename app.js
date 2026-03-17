@@ -1,0 +1,1896 @@
+
+// app.js - Core Logic for Jeu de Prompts
+const SUPABASE_URL = 'https://nywwmhmymusbnapblwoj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55d3dtaG15bXVzYm5hcGJsd29qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNDI2NzQsImV4cCI6MjA4NjkxODY3NH0.ad0KsZpGJUW_CF7k2dxxohX19CJ_ZnZMAOLaLchTCto';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- UTILITIES ---
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escapeAttr(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/'/g, '&#039;')
+        .replace(/"/g, '&quot;')
+        .replace(/\\/g, '\\\\');
+}
+
+let debounceTimer = null;
+function debounce(fn, delay) {
+    return (...args) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// State Management
+let state = {
+    user: null,
+    isAdmin: false,
+    categories: [],
+    resources: [],
+    news: [],
+    links: [],
+    currentCategory: null,
+    activeResource: null,
+    searchQuery: ''
+};
+
+// --- DOM ELEMENTS ---
+const authContainer = document.getElementById('auth-container');
+const siteContainer = document.getElementById('site-container');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const categoryNav = document.getElementById('category-nav');
+const resourceList = document.getElementById('resource-list');
+const resourceDisplay = document.getElementById('resource-display');
+const emptyState = document.getElementById('empty-state');
+const loadingSpinner = document.getElementById('loading-spinner');
+const newsList = document.getElementById('news-list');
+const linksList = document.getElementById('links-list');
+const logoutBtn = document.getElementById('logout-btn');
+const resourceSearch = document.getElementById('resource-search');
+const adminPanelBtn = document.getElementById('admin-panel-btn');
+const adminConsole = document.getElementById('admin-console');
+const closeAdminBtn = document.getElementById('close-admin-btn');
+const adminViewContainer = document.getElementById('admin-view-container');
+
+const adminAddBtn = document.getElementById('admin-add-resource-btn');
+const editorModal = document.getElementById('editor-modal');
+const resourceForm = document.getElementById('resource-form');
+
+// --- QUILL EDITOR ---
+let quillEditor = null;
+
+// Register custom HR blot
+const BlockEmbed = Quill.import('blots/block/embed');
+class DividerBlot extends BlockEmbed {
+    static blotName = 'divider';
+    static tagName = 'hr';
+}
+Quill.register(DividerBlot);
+
+function getQuill() {
+    if (!quillEditor) {
+        quillEditor = new Quill('#edit-content', {
+            theme: 'snow',
+            modules: {
+                toolbar: {
+                    container: '#editor-toolbar',
+                    handlers: {
+                        divider() {
+                            const range = this.quill.getSelection(true);
+                            this.quill.insertText(range.index, '\n', Quill.sources.USER);
+                            this.quill.insertEmbed(range.index + 1, 'divider', true, Quill.sources.USER);
+                            this.quill.setSelection(range.index + 2, Quill.sources.SILENT);
+                        }
+                    }
+                }
+            },
+            placeholder: 'Rédigez votre contenu ici...'
+        });
+    }
+    return quillEditor;
+}
+
+// --- LOADING SPINNER ---
+function showLoading() {
+    loadingSpinner.classList.remove('hidden');
+    resourceDisplay.classList.add('hidden');
+    emptyState.classList.add('hidden');
+}
+
+function hideLoading() {
+    loadingSpinner.classList.add('hidden');
+}
+
+// --- AUTHENTICATION ---
+async function checkUser() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            state.user = user;
+            await checkAdmin();
+            showSite();
+            initData();
+        } else {
+            showAuth();
+        }
+    } catch (err) {
+        console.error('Erreur vérification utilisateur:', err);
+        showAuth();
+    }
+}
+
+async function checkAdmin() {
+    try {
+        const { data, error } = await supabase.from('profiles').select('is_admin, subscription_status').eq('id', state.user.id).single();
+        if (!error && data) {
+            state.isAdmin = data.is_admin;
+            state.subscriptionStatus = data.subscription_status || 'inactive';
+        }
+    } catch (err) {
+        console.error('Erreur vérification admin:', err);
+    }
+}
+
+function showAuth() {
+    authContainer.classList.remove('hidden');
+    siteContainer.classList.add('hidden');
+}
+
+function showSite() {
+    // Admin always has access; others need active subscription_status
+    if (!state.isAdmin && state.subscriptionStatus !== 'active') {
+        showPendingMessage();
+        return;
+    }
+
+    authContainer.classList.add('hidden');
+    document.getElementById('pending-container')?.remove();
+    siteContainer.classList.remove('hidden');
+    const footer = document.getElementById('site-footer');
+    if (footer) footer.classList.remove('hidden');
+
+    const email = state.user.email || '';
+    document.getElementById('user-display-name').textContent = email.split('@')[0] || 'Utilisateur';
+    document.getElementById('user-display-id').textContent = `#ID: ${(state.user.id || '').substring(0, 8)}`;
+
+    if (state.isAdmin) {
+        adminAddBtn.classList.remove('hidden');
+        adminPanelBtn.classList.remove('hidden');
+    }
+}
+
+function showPendingMessage() {
+    authContainer.classList.add('hidden');
+    siteContainer.classList.add('hidden');
+    document.getElementById('pending-container')?.remove();
+
+    const pending = document.createElement('div');
+    pending.id = 'pending-container';
+    pending.className = 'flex-grow flex items-center justify-center p-6';
+    pending.innerHTML = `
+        <div class="max-w-lg w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 text-center">
+            <img src="Logo Jeu de Prompts.png" alt="Logo" class="h-16 mx-auto mb-4">
+            <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">&#9203;</div>
+            <h2 class="text-2xl font-black text-slate-900 mb-2">Compte en attente</h2>
+            <p class="text-sm text-slate-500 font-medium mb-6 leading-relaxed">
+                Votre compte sera valid&eacute; dans les 24h.<br>
+                Si vous avez d&eacute;j&agrave; r&eacute;gl&eacute; votre abonnement, Marc vous contactera tr&egrave;s vite pour activer votre acc&egrave;s.
+            </p>
+            <div class="bg-slate-50 rounded-2xl p-5 mb-6 text-left">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pas encore abonn&eacute; ?</p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="https://buy.stripe.com/5kQ3cu9iV0AlgeCezB1ZS0K" target="_blank"
+                        class="flex-1 bg-indigo-600 text-white text-center font-black py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-all active:scale-[0.98] no-underline text-sm">
+                        9,90&euro; / mois
+                    </a>
+                    <a href="https://buy.stripe.com/bJe3cu0MpbeZ3rQ6351ZS0L" target="_blank"
+                        class="flex-1 bg-white text-indigo-600 text-center font-black py-3 rounded-xl border-2 border-indigo-200 hover:border-indigo-400 transition-all no-underline text-sm">
+                        99&euro; / an
+                    </a>
+                </div>
+            </div>
+            <button onclick="window.app.logoutFromPending()" class="text-xs text-slate-400 hover:text-slate-600 font-bold transition-colors">Se d&eacute;connecter</button>
+        </div>
+    `;
+    document.body.insertBefore(pending, document.getElementById('site-container'));
+}
+
+async function logoutFromPending() {
+    await supabase.auth.signOut();
+    document.getElementById('pending-container')?.remove();
+    state.user = null;
+    state.isAdmin = false;
+    authContainer.classList.remove('hidden');
+    switchAuthTab('login');
+}
+
+// --- AUTH TABS & HELPERS ---
+function switchAuthTab(tab) {
+    const loginF = document.getElementById('login-form');
+    const registerF = document.getElementById('register-form');
+    const tabL = document.getElementById('tab-login');
+    const tabR = document.getElementById('tab-register');
+    loginError.classList.add('hidden');
+    if (tab === 'register') {
+        loginF.classList.add('hidden');
+        registerF.classList.remove('hidden');
+        tabR.classList.add('bg-white', 'shadow', 'text-indigo-700');
+        tabR.classList.remove('text-slate-500');
+        tabL.classList.remove('bg-white', 'shadow', 'text-indigo-700');
+        tabL.classList.add('text-slate-500');
+    } else {
+        registerF.classList.add('hidden');
+        loginF.classList.remove('hidden');
+        tabL.classList.add('bg-white', 'shadow', 'text-indigo-700');
+        tabL.classList.remove('text-slate-500');
+        tabR.classList.remove('bg-white', 'shadow', 'text-indigo-700');
+        tabR.classList.add('text-slate-500');
+    }
+}
+
+function togglePwd(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    const eo = btn.querySelector('.eye-open');
+    const ec = btn.querySelector('.eye-closed');
+    if (inp.type === 'password') {
+        inp.type = 'text'; eo.classList.add('hidden'); ec.classList.remove('hidden');
+    } else {
+        inp.type = 'password'; eo.classList.remove('hidden'); ec.classList.add('hidden');
+    }
+}
+
+function validatePwd(val) {
+    const rules = document.getElementById('pw-rules');
+    const dots = rules.querySelectorAll('.pw-dot');
+    if (val.length > 0) rules.classList.remove('hidden');
+    else { rules.classList.add('hidden'); return; }
+    const checks = [val.length >= 8, /[A-Z]/.test(val), /[a-z]/.test(val), /[0-9]/.test(val)];
+    dots.forEach((dot, i) => {
+        if (checks[i]) { dot.classList.remove('bg-slate-200'); dot.classList.add('bg-indigo-500'); }
+        else { dot.classList.add('bg-slate-200'); dot.classList.remove('bg-indigo-500'); }
+    });
+}
+
+// --- LOGIN ---
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        loginError.textContent = error.message;
+        loginError.classList.remove('hidden');
+    } else {
+        loginError.classList.add('hidden');
+        state.user = data.user;
+        await checkAdmin();
+        showSite();
+        initData();
+    }
+});
+
+// --- REGISTER ---
+const registerForm = document.getElementById('register-form');
+registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const confirm = document.getElementById('reg-confirm').value;
+
+    if (password !== confirm) {
+        loginError.textContent = 'Les mots de passe ne correspondent pas.';
+        loginError.classList.remove('hidden');
+        return;
+    }
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+        loginError.textContent = 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.';
+        loginError.classList.remove('hidden');
+        return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } }
+    });
+
+    if (error) {
+        loginError.textContent = error.message;
+        loginError.classList.remove('hidden');
+    } else {
+        loginError.classList.add('hidden');
+        // Check if there was a payment intent
+        const paymentIntent = sessionStorage.getItem('payment_intent');
+        if (paymentIntent && STRIPE_LINKS[paymentIntent]) {
+            sessionStorage.removeItem('payment_intent');
+            // Update success message
+            document.getElementById('successMsg').textContent = 'Compte créé ! Vous allez être redirigé vers le paiement...';
+            document.getElementById('successPopup').classList.remove('hidden');
+            setTimeout(() => {
+                window.open(STRIPE_LINKS[paymentIntent] + '?prefilled_email=' + encodeURIComponent(email), '_blank');
+            }, 2000);
+        } else {
+            document.getElementById('successPopup').classList.remove('hidden');
+        }
+        switchAuthTab('login');
+    }
+});
+
+// --- LOGOUT ---
+logoutBtn.addEventListener('click', async () => {
+    if (!confirm('Se déconnecter ?')) return;
+    await supabase.auth.signOut();
+    state.user = null;
+    state.isAdmin = false;
+    siteContainer.classList.add('hidden');
+    document.getElementById('site-footer')?.classList.add('hidden');
+    authContainer.classList.remove('hidden');
+    // Reset to login tab
+    switchAuthTab('login');
+});
+
+adminPanelBtn.addEventListener('click', () => {
+    adminConsole.classList.remove('hidden');
+    fetchAdminStats();
+    setAdminView('users');
+});
+
+closeAdminBtn.addEventListener('click', () => {
+    adminConsole.classList.add('hidden');
+});
+
+// --- DATA FETCHING ---
+async function initData() {
+    try {
+        await Promise.all([
+            fetchCategories(),
+            fetchNews(),
+            fetchLinks()
+        ]);
+        renderNav();
+        renderNews();
+        renderLinks();
+
+        if (state.categories.length > 0) {
+            loadCategory(state.categories[0].slug);
+        }
+    } catch (err) {
+        console.error('Erreur initialisation données:', err);
+    }
+}
+
+async function fetchCategories() {
+    const { data, error } = await supabase.from('categories').select('*').order('position');
+    if (!error) state.categories = data || [];
+}
+
+async function fetchNews() {
+    const { data, error } = await supabase.from('news').select('*').order('created_at', { ascending: false }).limit(5);
+    if (!error) state.news = data || [];
+}
+
+async function fetchLinks() {
+    const { data, error } = await supabase.from('links').select('*').order('position');
+    if (!error) state.links = data || [];
+}
+
+// --- RENDERING ---
+async function renderNav() {
+    // Check unread messages
+    let unreadBadge = '';
+    try {
+        const { count } = await supabase.from('private_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', state.user.id)
+            .eq('is_read', false);
+        if (count > 0) unreadBadge = '<span class="w-1.5 h-1.5 bg-red-500 rounded-full inline-block ml-1 notif-pulse"></span>';
+    } catch(e) {}
+
+    // Desktop nav — fills available space, buttons stretch evenly
+    const catButtons = state.categories.map(cat => {
+        const slug = escapeAttr(cat.slug);
+        const name = escapeHtml(cat.name);
+        const isActive = state.currentCategory === cat.slug;
+        return `
+        <button onclick="window.app.loadCategory('${slug}')"
+            class="nav-btn flex-1 py-1.5 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-center
+            ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:text-slate-800'}">
+            ${name}
+        </button>`;
+    }).join('');
+
+    categoryNav.innerHTML = catButtons + `
+        <div class="w-px h-4 bg-slate-200 mx-1 self-center shrink-0"></div>
+        <button onclick="window.app.openFavorites()"
+            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-amber-600">
+            ⭐ Favoris
+        </button>
+        <button onclick="window.app.openAllNotes()"
+            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-amber-700">
+            📝 Notes
+        </button>
+        <button onclick="window.app.openMessages()"
+            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-cyan-600">
+            💬 Marc${unreadBadge}
+        </button>`;
+
+    // Mobile nav
+    const mobileNav = document.querySelector('#mobile-category-nav > div');
+    if (mobileNav) {
+        const mobileCats = state.categories.map(cat => {
+            const slug = escapeAttr(cat.slug);
+            const name = escapeHtml(cat.name);
+            const isActive = state.currentCategory === cat.slug;
+            return `
+            <button onclick="window.app.loadCategory('${slug}')"
+                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap
+                ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 bg-slate-50'}">
+                ${name}
+            </button>`;
+        }).join('');
+
+        mobileNav.innerHTML = mobileCats + `
+            <button onclick="window.app.openFavorites()"
+                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-amber-600">
+                ⭐ Favoris
+            </button>
+            <button onclick="window.app.openAllNotes()"
+                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-amber-700">
+                📝 Notes
+            </button>
+            <button onclick="window.app.openMessages()"
+                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-cyan-600">
+                💬 Marc${unreadBadge}
+            </button>`;
+    }
+}
+
+function renderNews() {
+    const now = Date.now();
+    const items = state.news.map(n => {
+        const date = new Date(n.created_at);
+        const isRecent = (now - date.getTime()) < 7 * 86400 * 1000;
+        const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return `
+        <div class="separator">
+            <div class="flex items-center gap-2">
+                <p class="text-[9px] font-black text-indigo-500 uppercase tracking-tighter">${escapeHtml(dateStr)}</p>
+                ${isRecent ? '<span class="bg-indigo-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">NEW</span>' : ''}
+            </div>
+            <p class="text-xs font-black leading-tight text-slate-800 mt-1">${escapeHtml(n.title)}</p>
+        </div>`;
+    }).join('');
+
+    newsList.innerHTML = items + `
+        <button onclick="window.app.openAllNews()"
+            class="w-full mt-1 text-[9px] font-black uppercase text-slate-400 hover:text-indigo-600 transition-colors py-2 border-t border-slate-50">
+            Voir tout +
+        </button>`;
+}
+
+async function openAllNews() {
+    // Fetch all news
+    const { data } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+    const allNews = data || [];
+
+    const now = Date.now();
+    let html = allNews.map(n => {
+        const date = new Date(n.created_at);
+        const isRecent = (now - date.getTime()) < 7 * 86400 * 1000;
+        const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        return `
+        <div class="separator pb-4 mb-4">
+            <div class="flex items-center gap-2 mb-1">
+                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-tighter">${escapeHtml(dateStr)}</p>
+                ${isRecent ? '<span class="bg-indigo-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">NEW</span>' : ''}
+            </div>
+            <h4 class="font-black text-slate-800 text-base mb-2 leading-tight">${escapeHtml(n.title)}</h4>
+            ${n.content ? `<div class="lesson-content text-sm font-medium leading-relaxed text-slate-600">${n.content}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    // Show in modal
+    const modal = document.createElement('div');
+    modal.id = 'allNewsModal';
+    modal.className = 'fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm p-6 overflow-y-auto flex items-start justify-center';
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    modal.innerHTML = `
+        <div class="max-w-2xl w-full bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-10 modal-enter mt-10">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-black text-slate-900">Toutes les actualités</h2>
+                <button onclick="this.closest('#allNewsModal').remove()" class="text-slate-400 font-black text-xl hover:text-slate-900 transition-colors">✕</button>
+            </div>
+            <div class="max-h-[65vh] overflow-y-auto custom-scrollbar">${html}</div>
+        </div>`;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    modal.querySelector('button').addEventListener('click', () => { document.body.style.overflow = ''; });
+    modal.addEventListener('click', (e) => { if (e.target === modal) { document.body.style.overflow = ''; } });
+}
+
+function renderLinks() {
+    linksList.innerHTML = state.links.map(lk => {
+        const label = escapeHtml(lk.label);
+        const hasContent = lk.content && lk.content.trim();
+        const url = lk.url ? escapeAttr(lk.url) : '#';
+        // If the link has rich content, open in popup; otherwise open URL
+        if (hasContent) {
+            return `
+            <button onclick="window.app.openLinkPopup(${lk.id})"
+                class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-black transition-all group text-left">
+                <span class="w-2 h-2 bg-rose-200 rounded-full group-hover:bg-rose-500 transition-colors shrink-0"></span>
+                <span class="text-slate-600 group-hover:text-slate-900">${label}</span>
+            </button>`;
+        }
+        return `
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+            class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-black transition-all group text-left no-underline">
+            <span class="w-2 h-2 bg-rose-200 rounded-full group-hover:bg-rose-500 transition-colors shrink-0"></span>
+            <span class="text-slate-600 group-hover:text-slate-900">${label}</span>
+        </a>`;
+    }).join('');
+}
+
+function openLinkPopup(id) {
+    const lk = state.links.find(l => l.id === id);
+    if (!lk) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'linkPopup';
+    modal.className = 'fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm p-6 overflow-y-auto flex items-center justify-center';
+    modal.onclick = (e) => { if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; } };
+    modal.innerHTML = `
+        <div class="max-w-xl w-full bg-white rounded-[2.5rem] shadow-2xl p-8 md:p-10 modal-enter">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-slate-900">${escapeHtml(lk.label)}</h2>
+                <button onclick="this.closest('#linkPopup').remove(); document.body.style.overflow='';" class="text-slate-400 font-black hover:text-slate-900 transition-colors">✕</button>
+            </div>
+            <div class="lesson-content text-sm font-medium leading-relaxed text-slate-700">${lk.content || ''}</div>
+            ${lk.url ? `<a href="${escapeAttr(lk.url)}" target="_blank" class="inline-block mt-6 bg-indigo-600 text-white font-black py-2.5 px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all no-underline">Ouvrir le lien</a>` : ''}
+        </div>`;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
+
+async function loadCategory(slug) {
+    state.currentCategory = slug;
+    state.activeResource = null;
+    renderNav();
+    showLoading();
+
+    const cat = state.categories.find(c => c.slug === slug);
+    if (!cat) { hideLoading(); return; }
+
+    const { data, error } = await supabase.from('resources').select('*').eq('category_id', cat.id).order('created_at', { ascending: false });
+    hideLoading();
+
+    if (!error) {
+        state.resources = data || [];
+        renderResourceList();
+        emptyState.classList.remove('hidden');
+        resourceDisplay.classList.add('hidden');
+    }
+}
+
+function renderResourceList() {
+    const query = state.searchQuery.toLowerCase();
+    const filtered = state.resources.filter(r =>
+        (r.title || '').toLowerCase().includes(query) ||
+        (r.content || '').toLowerCase().includes(query)
+    );
+
+    resourceList.innerHTML = filtered.map(r => {
+        const rid = escapeAttr(r.id);
+        const title = escapeHtml(r.title);
+        const isActive = state.activeResource?.id === r.id;
+        return `
+        <button onclick="window.app.loadResource('${rid}')"
+            ${isActive ? 'aria-current="true"' : ''}
+            class="w-full transition-sidebar flex items-center gap-2.5 px-4 py-3 text-xs font-bold border-b border-slate-50 hover:bg-slate-100 text-left
+            ${isActive ? 'sidebar-active text-indigo-900 bg-indigo-50/30' : 'text-slate-500'}">
+            <div class="w-4 h-4 border-2 ${isActive ? 'border-indigo-400 bg-indigo-100' : 'border-slate-100'} rounded-full shrink-0"></div>
+            <span class="line-clamp-2">${title}</span>
+        </button>`;
+    }).join('');
+
+    // Auto-scroll sidebar to active item
+    setTimeout(() => {
+        const active = resourceList.querySelector('[aria-current="true"]');
+        if (active) active.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }, 50);
+}
+
+function processContent(html) {
+    if (!html) return '';
+    let c = html.replace(/&nbsp;/g, ' ');
+
+    // [hl]highlight[/hl]
+    c = c.replace(/\[hl\](.*?)\[\/hl\]/gis, '<mark>$1</mark>');
+    // [s]strike[/s]
+    c = c.replace(/\[s\](.*?)\[\/s\]/gis, '<s>$1</s>');
+    // [hr]
+    c = c.replace(/\[hr\]/g, '<hr>');
+    // [spoiler]...[/spoiler]
+    c = c.replace(/\[spoiler\](.*?)\[\/spoiler\]/gis, '<details><summary><span class="bg-indigo-100 p-1 rounded-lg">💡</span> Voir la réponse</summary><div>$1</div></details>');
+
+    // YouTube embeds
+    c = c.replace(/(?:<p>)?(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})[^\s<]*(?:<\/p>)?/gi,
+        '<figure class="my-8 relative rounded-2xl overflow-hidden shadow-lg" style="padding-bottom:56.25%"><iframe src="https://www.youtube.com/embed/$1?rel=0" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></figure>');
+
+    // Vimeo embeds
+    c = c.replace(/(?:<p>)?https?:\/\/(?:www\.)?vimeo\.com\/(\d+)[^\s<]*(?:<\/p>)?/gi,
+        '<figure class="my-8 relative rounded-2xl overflow-hidden shadow-lg" style="padding-bottom:56.25%"><iframe src="https://player.vimeo.com/video/$1" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></figure>');
+
+    // Spotify embeds
+    c = c.replace(/(?:<p>)?https?:\/\/open\.spotify\.com\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)[^\s<]*(?:<\/p>)?/gi,
+        '<figure class="my-8"><iframe src="https://open.spotify.com/embed/$1/$2" width="100%" height="152" frameborder="0" allow="encrypted-media" style="border-radius:12px" loading="lazy"></iframe></figure>');
+
+    // Dailymotion embeds
+    c = c.replace(/(?:<p>)?https?:\/\/(?:www\.)?dailymotion\.com\/video\/([a-zA-Z0-9]+)[^\s<]*(?:<\/p>)?/gi,
+        '<figure class="my-8 relative rounded-2xl overflow-hidden shadow-lg" style="padding-bottom:56.25%"><iframe src="https://www.dailymotion.com/embed/video/$1" class="absolute inset-0 w-full h-full" frameborder="0" allowfullscreen loading="lazy"></iframe></figure>');
+
+    // Instagram embeds
+    c = c.replace(/(?:<p>)?https?:\/\/(?:www\.)?instagram\.com\/(p|reel)\/([a-zA-Z0-9_-]+)[^\s<]*(?:<\/p>)?/gi,
+        '<figure class="my-8 flex justify-center"><iframe src="https://www.instagram.com/$1/$2/embed" width="400" height="550" frameborder="0" scrolling="no" style="border-radius:12px;max-width:100%" loading="lazy"></iframe></figure>');
+
+    // Twitter/X embeds
+    c = c.replace(/(?:<p>)?https?:\/\/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)[^\s<]*(?:<\/p>)?/gi,
+        '<figure class="my-8 flex justify-center"><blockquote class="twitter-tweet"><a href="https://twitter.com/i/status/$1"></a></blockquote></figure>');
+
+    // SoundCloud embeds
+    c = c.replace(/(?:<p>)?(https?:\/\/soundcloud\.com\/[^\s<"]+)(?:<\/p>)?/gi,
+        '<figure class="my-8"><iframe width="100%" height="166" scrolling="no" frameborder="no" src="https://w.soundcloud.com/player/?url=$1&color=%234f46e5&auto_play=false&hide_related=true&show_comments=false" style="border-radius:12px" loading="lazy"></iframe></figure>');
+
+    // Facebook video embeds
+    c = c.replace(/(?:<p>)?(https?:\/\/(?:www\.)?facebook\.com\/[^\s<"]+\/videos\/[^\s<"]+)(?:<\/p>)?/gi,
+        '<figure class="my-8 flex justify-center"><iframe src="https://www.facebook.com/plugins/video.php?href=$1&show_text=false" width="100%" style="aspect-ratio:9/16;max-height:70vh;border-radius:12px" frameborder="0" allowfullscreen loading="lazy"></iframe></figure>');
+
+    // Audio files
+    c = c.replace(/((?:https?:\/\/[^\s<"]+|uploads\/audio\/[^\s<"]+)\.(mp3|wav|m4a|ogg))/gi,
+        '<div class="my-6 p-4 bg-indigo-50 rounded-xl border border-indigo-100 shadow-sm"><audio controls class="w-full"><source src="$1" type="audio/$2"></audio></div>');
+
+    // Video files
+    c = c.replace(/((?:https?:\/\/[^\s<"]+|uploads\/video\/[^\s<"]+)\.(mp4|webm))/gi,
+        '<figure class="my-8 rounded-2xl overflow-hidden shadow-lg"><video controls class="w-full" style="max-height:70vh"><source src="$1" type="video/$2"></video></figure>');
+
+    return c;
+}
+
+async function loadResource(id) {
+    const res = state.resources.find(r => r.id == id);
+    if (!res) return;
+
+    state.activeResource = res;
+    renderResourceList();
+
+    emptyState.classList.add('hidden');
+    loadingSpinner.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+
+    const adminActions = state.isAdmin ? `
+        <div class="flex gap-2 mt-4">
+            <button onclick="window.app.openEditor('${escapeAttr(res.id)}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg font-bold transition-all">Éditer</button>
+            <button onclick="window.app.deleteResource('${escapeAttr(res.id)}')" class="text-xs bg-red-50 text-red-500 hover:bg-red-100 px-3 py-1 rounded-lg font-bold transition-all">Supprimer</button>
+        </div>
+    ` : '';
+
+    // Check if favorited
+    const { data: favCheck } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', state.user.id)
+        .eq('resource_id', res.id)
+        .single();
+    const isFav = !!favCheck;
+
+    // Fetch comments for this resource
+    const { data: comments } = await supabase
+        .from('comments')
+        .select('*, profiles(id)')
+        .eq('resource_id', res.id)
+        .order('created_at', { ascending: false });
+
+    // Fetch user's private notes
+    const { data: noteData } = await supabase
+        .from('notes')
+        .select('content')
+        .eq('user_id', state.user.id)
+        .eq('resource_id', res.id)
+        .single();
+
+    const commentsHtml = renderComments(comments || [], res.id);
+    const notesHtml = renderNotes(noteData?.content || '', res.id);
+
+    resourceDisplay.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 md:p-10 relative animate-fade-in min-w-0">
+            <div class="fiche-header">
+                <div class="mb-6">
+                    <h1 class="text-2xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-4">
+                        ${escapeHtml(res.title)}
+                    </h1>
+                    <div class="flex gap-2 items-center">
+                        <button onclick="window.app.toggleFavorite(${res.id})"
+                            class="w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border ${isFav ? 'bg-amber-50 border-amber-200 text-amber-500' : 'bg-slate-50 border-slate-100 text-slate-300 hover:text-amber-400'}">
+                            <svg class="h-5 w-5" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-3.976-2.888a1 1 0 00-1.175 0l-3.976 2.888c-.784.57-1.838-.196-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                        </button>
+                        ${adminActions}
+                    </div>
+                </div>
+            </div>
+            <article>
+                <span class="section-badge badge-workflow">Workflow & Prompts</span>
+                <div class="lesson-content text-base font-medium" dir="auto">
+                    ${processContent(res.content)}
+                </div>
+            </article>
+        </div>
+
+        <!-- Comments Section -->
+        <div id="comment-section" class="bg-white rounded-[2rem] shadow-sm border border-slate-200 p-6 md:p-10 animate-fade-in">
+            ${commentsHtml}
+        </div>
+
+        <!-- Private Notes -->
+        <div class="bg-amber-50/50 rounded-[2rem] border border-amber-100 p-6 md:p-10 animate-fade-in">
+            ${notesHtml}
+        </div>
+    `;
+
+    // Lightbox on images
+    resourceDisplay.querySelectorAll('.lesson-content img').forEach(img => {
+        img.style.cursor = 'zoom-in';
+        img.addEventListener('click', () => openLightbox(img.src, img.alt));
+    });
+
+    // Auto-scroll to content on mobile
+    if (window.innerWidth < 1024) {
+        setTimeout(() => resourceDisplay.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+}
+
+// --- COMMENTS ---
+function renderComments(comments, resourceId) {
+    const parents = comments.filter(c => !c.parent_id);
+    const replies = comments.filter(c => c.parent_id);
+    const count = comments.length;
+
+    let html = `
+        <h3 class="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+            <span>💬 Discussion</span>
+            <span class="bg-slate-100 text-slate-400 text-xs px-3 py-1 rounded-full font-black">${count}</span>
+        </h3>
+        <form onsubmit="window.app.postComment(event, '${escapeAttr(resourceId)}', null)" class="mb-8">
+            <div class="bg-slate-50 rounded-2xl p-2 border border-slate-100 shadow-inner">
+                <textarea id="comment-text" required rows="3"
+                    class="w-full bg-transparent border-none p-3 text-sm font-medium outline-none placeholder-slate-400"
+                    placeholder="Une question ? Une remarque ?..."></textarea>
+                <div class="flex justify-end p-2">
+                    <button type="submit"
+                        class="bg-indigo-600 text-white font-black py-2 px-6 rounded-xl text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-md active:scale-95 transition-all">
+                        Publier
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div class="space-y-5 text-sm text-slate-700 font-medium">`;
+
+    for (const com of parents) {
+        const initial = (com.author_name || 'U').charAt(0).toUpperCase();
+        const comReplies = replies.filter(r => r.parent_id === com.id);
+        const dateStr = new Date(com.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) + ' à ' + new Date(com.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        const canDelete = com.user_id === state.user.id || state.isAdmin;
+
+        html += `
+            <div class="group border-b border-slate-50 pb-5">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center font-black text-slate-400 text-xs">${initial}</div>
+                        <div>
+                            <p class="text-sm font-black text-slate-800 leading-none">${escapeHtml(com.author_name || 'Utilisateur')}</p>
+                            <p class="text-[9px] font-bold text-slate-300 uppercase tracking-tighter mt-1">${dateStr}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${canDelete ? `<button onclick="window.app.deleteComment('${com.id}', '${escapeAttr(resourceId)}')" class="text-red-400 text-[10px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">Supprimer</button>` : ''}
+                        <button onclick="document.getElementById('reply-${com.id}').classList.toggle('hidden')" class="text-indigo-500 text-[10px] font-black uppercase">Répondre</button>
+                    </div>
+                </div>
+                <p class="text-sm ml-11 font-medium leading-relaxed text-slate-600">${escapeHtml(com.content)}</p>
+                <div id="reply-${com.id}" class="hidden ml-11 mt-3">
+                    <form onsubmit="window.app.postComment(event, '${escapeAttr(resourceId)}', '${com.id}')">
+                        <div class="bg-slate-50 rounded-xl p-2 border border-slate-100 shadow-inner">
+                            <textarea required rows="2" class="reply-text w-full bg-transparent border-none p-2 text-xs font-medium outline-none text-slate-700" placeholder="Votre réponse..."></textarea>
+                            <div class="flex justify-end p-1">
+                                <button type="submit" class="bg-indigo-600 text-white font-black py-1.5 px-4 rounded-lg text-[9px] uppercase active:scale-95 transition-all">Répondre</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>`;
+
+        for (const rep of comReplies) {
+            const repDate = new Date(rep.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) + ' à ' + new Date(rep.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+            const canDeleteRep = rep.user_id === state.user.id || state.isAdmin;
+            html += `
+                <div class="ml-11 mt-3 pl-4 border-l-2 border-slate-100 group/rep">
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-slate-800">${escapeHtml(rep.author_name || 'Utilisateur')}</span>
+                            <span class="text-[8px] font-bold text-slate-300 uppercase">${repDate}</span>
+                        </div>
+                        ${canDeleteRep ? `<button onclick="window.app.deleteComment('${rep.id}', '${escapeAttr(resourceId)}')" class="text-red-300 text-[8px] font-black uppercase opacity-0 group-hover/rep:opacity-100 transition-opacity">Supprimer</button>` : ''}
+                    </div>
+                    <p class="text-xs italic text-slate-500 font-medium">${escapeHtml(rep.content)}</p>
+                </div>`;
+        }
+        html += `</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+async function postComment(e, resourceId, parentId) {
+    e.preventDefault();
+    const textarea = parentId
+        ? e.target.querySelector('.reply-text')
+        : document.getElementById('comment-text');
+    const content = textarea.value.trim();
+    if (!content) return;
+
+    const email = state.user.email || '';
+    const name = email.split('@')[0] || 'Utilisateur';
+
+    const payload = {
+        resource_id: resourceId,
+        user_id: state.user.id,
+        author_name: name,
+        content: content,
+        parent_id: parentId || null
+    };
+
+    const { error } = await supabase.from('comments').insert(payload);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await loadResource(state.activeResource.id);
+        setTimeout(() => {
+            document.getElementById('comment-section')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
+}
+
+async function deleteComment(commentId, resourceId) {
+    if (!confirm('Supprimer ce commentaire ?')) return;
+    // Delete replies first, then comment
+    await supabase.from('comments').delete().eq('parent_id', commentId);
+    await supabase.from('comments').delete().eq('id', commentId);
+    await loadResource(state.activeResource.id);
+}
+
+// --- PRIVATE NOTES ---
+function renderNotes(content, resourceId) {
+    return `
+        <div class="flex items-center gap-3 mb-5">
+            <span class="text-xl">📝</span>
+            <h3 class="text-base font-black text-amber-900">Mes notes personnelles</h3>
+            <span class="text-[10px] font-bold text-amber-600/50 uppercase tracking-widest ml-auto">Privé</span>
+        </div>
+        <div id="note-saved-msg" class="hidden text-[10px] font-black text-emerald-600 uppercase mb-3">✓ Notes enregistrées !</div>
+        <textarea id="note-text" rows="4"
+            class="w-full bg-white border border-amber-100 rounded-2xl p-4 text-sm text-amber-900 font-medium outline-none focus:ring-4 focus:ring-amber-200/20"
+            placeholder="Vos notes privées sur cette fiche...">${escapeHtml(content)}</textarea>
+        <div class="flex justify-end mt-3">
+            <button onclick="window.app.saveNote('${escapeAttr(resourceId)}')"
+                class="bg-amber-600 text-white font-black py-2.5 px-6 rounded-xl text-[10px] uppercase tracking-widest shadow-md hover:bg-amber-700 active:scale-95 transition-all">
+                Enregistrer
+            </button>
+        </div>`;
+}
+
+async function saveNote(resourceId) {
+    const content = document.getElementById('note-text').value;
+    const { error } = await supabase.from('notes').upsert({
+        user_id: state.user.id,
+        resource_id: resourceId,
+        content: content
+    }, { onConflict: 'user_id,resource_id' });
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        const msg = document.getElementById('note-saved-msg');
+        msg.classList.remove('hidden');
+        setTimeout(() => msg.classList.add('hidden'), 3000);
+    }
+}
+
+// --- MESSAGING (Écrire à Marc) ---
+async function openMessages() {
+    // Find admin
+    const { data: admins } = await supabase.from('profiles').select('id, is_admin').eq('is_admin', true).limit(1);
+    const adminId = admins?.[0]?.id;
+    if (!adminId) { alert('Aucun administrateur trouvé.'); return; }
+
+    // Fetch messages
+    const { data: messages } = await supabase
+        .from('private_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${state.user.id},receiver_id.eq.${adminId}),and(sender_id.eq.${adminId},receiver_id.eq.${state.user.id})`)
+        .order('created_at', { ascending: true });
+
+    // Mark as read
+    await supabase.from('private_messages').update({ is_read: true })
+        .eq('sender_id', adminId).eq('receiver_id', state.user.id).eq('is_read', false);
+
+    const msgList = (messages || []).map(m => {
+        const isMine = m.sender_id === state.user.id;
+        const dateStr = new Date(m.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) + ' ' + new Date(m.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        return `
+            <div class="flex ${isMine ? 'justify-end' : 'justify-start'} group">
+                <div class="max-w-[75%] ${isMine ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100'} border rounded-2xl p-4 relative">
+                    ${!isMine ? '<p class="text-[9px] font-black text-indigo-600 uppercase mb-1">Marc</p>' : ''}
+                    <p class="text-sm text-slate-700 font-medium">${escapeHtml(m.content)}</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[9px] text-slate-400">${dateStr}</span>
+                        ${isMine ? `<button onclick="window.app.deleteMessage('${m.id}')" class="text-[9px] text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">supprimer</button>` : ''}
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+
+    const emptyMsg = messages?.length ? '' : `
+        <div class="text-center py-10">
+            <div class="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">💬</div>
+            <p class="text-slate-400 text-sm font-medium">Aucun message.<br>Envoyez votre premier message !</p>
+        </div>`;
+
+    // Hide other views, show message view
+    emptyState.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+    resourceDisplay.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-slate-100 flex items-center gap-4">
+                <button onclick="window.app.closeMessages()" class="bg-slate-100 p-2 rounded-xl text-slate-400 hover:text-slate-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 class="text-xl font-black text-slate-900">Conversation avec Marc</h2>
+            </div>
+            <div id="msgThread" class="p-6 space-y-4 max-h-[55vh] overflow-y-auto custom-scrollbar">
+                ${emptyMsg}${msgList}
+            </div>
+            <div class="p-5 border-t border-slate-100">
+                <form onsubmit="window.app.sendMessage(event, '${adminId}')">
+                    <div class="flex gap-2">
+                        <textarea id="msg-input" required rows="1" placeholder="Votre message..."
+                            class="flex-grow bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:ring-4 focus:ring-indigo-500/10 resize-none"
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit()}"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+                        <button type="submit" class="bg-indigo-600 text-white px-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95">Envoyer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // Auto-scroll to bottom
+    const thread = document.getElementById('msgThread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendMessage(e, receiverId) {
+    e.preventDefault();
+    const input = document.getElementById('msg-input');
+    const content = input.value.trim();
+    if (!content) return;
+
+    const { error } = await supabase.from('private_messages').insert({
+        sender_id: state.user.id,
+        receiver_id: receiverId,
+        content: content
+    });
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await openMessages();
+    }
+}
+
+async function deleteMessage(msgId) {
+    if (!confirm('Supprimer ce message ?')) return;
+    await supabase.from('private_messages').delete().eq('id', msgId).eq('sender_id', state.user.id);
+    await openMessages();
+}
+
+function closeMessages() {
+    if (state.activeResource) {
+        loadResource(state.activeResource.id);
+    } else {
+        resourceDisplay.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+    }
+}
+
+// --- GO HOME ---
+function goHome() {
+    state.activeResource = null;
+    if (state.categories.length > 0) {
+        loadCategory(state.categories[0].slug);
+    }
+    resourceDisplay.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+}
+
+// --- FAVORITES ---
+async function toggleFavorite(resourceId) {
+    // Check if already favorited
+    const { data: existing } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', state.user.id)
+        .eq('resource_id', resourceId)
+        .single();
+
+    if (existing) {
+        await supabase.from('favorites').delete().eq('id', existing.id);
+    } else {
+        await supabase.from('favorites').insert({ user_id: state.user.id, resource_id: resourceId });
+    }
+    // Reload to update the star
+    await loadResource(resourceId);
+}
+
+async function openFavorites() {
+    emptyState.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+
+    const { data: favs } = await supabase
+        .from('favorites')
+        .select('resource_id, resources(id, title)')
+        .eq('user_id', state.user.id)
+        .order('created_at', { ascending: false });
+
+    const items = (favs || []).filter(f => f.resources);
+
+    let html;
+    if (items.length === 0) {
+        html = `
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-12 text-center animate-fade-in">
+                <div class="text-5xl mb-6 opacity-20">⭐</div>
+                <h2 class="text-2xl font-black text-slate-900 mb-3 tracking-tight">Aucun favori</h2>
+                <p class="text-slate-500 font-medium text-sm max-w-md mx-auto">Vous n'avez pas encore de fiches favorites. Ouvrez une fiche et cliquez sur l'étoile pour l'ajouter à vos favoris.</p>
+            </div>`;
+    } else {
+        const list = items.map(f => `
+            <button onclick="window.app.loadResourceFromAnywhere(${f.resources.id})"
+                class="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-indigo-50 transition-all text-left group">
+                <span class="text-amber-400">★</span>
+                <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-700">${escapeHtml(f.resources.title)}</span>
+            </button>`).join('');
+        html = `
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 md:p-10 animate-fade-in">
+                <h2 class="text-2xl font-black text-slate-900 mb-6 tracking-tight flex items-center gap-3">⭐ Mes favoris <span class="bg-slate-100 text-slate-400 text-xs px-3 py-1 rounded-full font-black">${items.length}</span></h2>
+                <div class="divide-y divide-slate-50">${list}</div>
+            </div>`;
+    }
+    resourceDisplay.innerHTML = html;
+}
+
+async function loadResourceFromAnywhere(id) {
+    // Fetch the resource and its category, then load it
+    const { data: res } = await supabase.from('resources').select('*, categories(slug)').eq('id', id).single();
+    if (!res) return;
+    if (res.categories?.slug) {
+        await loadCategory(res.categories.slug);
+    }
+    await loadResource(id);
+}
+
+// --- ALL NOTES ---
+async function openAllNotes() {
+    emptyState.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+
+    const { data: allNotes } = await supabase
+        .from('notes')
+        .select('resource_id, content, updated_at, resources(id, title)')
+        .eq('user_id', state.user.id)
+        .neq('content', '')
+        .order('updated_at', { ascending: false });
+
+    const items = (allNotes || []).filter(n => n.resources && n.content.trim());
+
+    let html;
+    if (items.length === 0) {
+        html = `
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-12 text-center animate-fade-in">
+                <div class="text-5xl mb-6 opacity-20">📝</div>
+                <h2 class="text-2xl font-black text-slate-900 mb-3 tracking-tight">Aucune note</h2>
+                <p class="text-slate-500 font-medium text-sm max-w-md mx-auto">Vous n'avez pas encore de notes personnelles. Ouvrez une fiche et utilisez la zone "Mes notes personnelles" en bas de page pour en créer.</p>
+            </div>`;
+    } else {
+        const list = items.map(n => {
+            const dateStr = new Date(n.updated_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
+            const preview = n.content.length > 120 ? n.content.substring(0, 120) + '…' : n.content;
+            return `
+            <button onclick="window.app.loadResourceFromAnywhere(${n.resources.id})"
+                class="w-full text-left p-5 rounded-2xl hover:bg-amber-50/50 transition-all group border-b border-slate-50">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-black text-slate-800 group-hover:text-indigo-700">${escapeHtml(n.resources.title)}</span>
+                    <span class="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">${dateStr}</span>
+                </div>
+                <p class="text-xs text-slate-500 font-medium leading-relaxed">${escapeHtml(preview)}</p>
+            </button>`;
+        }).join('');
+        html = `
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 md:p-10 animate-fade-in">
+                <h2 class="text-2xl font-black text-slate-900 mb-6 tracking-tight flex items-center gap-3">📝 Mes notes <span class="bg-slate-100 text-slate-400 text-xs px-3 py-1 rounded-full font-black">${items.length}</span></h2>
+                <div>${list}</div>
+            </div>`;
+    }
+    resourceDisplay.innerHTML = html;
+}
+
+// --- SETTINGS (Change Password) ---
+function openSettings() {
+    const modal = document.createElement('div');
+    modal.id = 'settingsModal';
+    modal.className = 'fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6';
+    modal.onclick = (e) => { if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; } };
+    modal.innerHTML = `
+        <div class="max-w-sm w-full bg-white rounded-[2.5rem] shadow-2xl p-8 modal-enter">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-slate-900">Changer le mot de passe</h2>
+                <button onclick="this.closest('#settingsModal').remove(); document.body.style.overflow='';" class="text-slate-400 hover:text-slate-900 transition-colors font-black text-xl">&times;</button>
+            </div>
+            <div id="settings-error" class="hidden info-box info-box-error mb-4 text-sm"></div>
+            <div id="settings-success" class="hidden info-box info-box-success mb-4 text-sm"></div>
+            <form onsubmit="window.app.changePassword(event)" class="space-y-4">
+                <div class="relative">
+                    <input type="password" id="new-password" required placeholder="Nouveau mot de passe"
+                        class="w-full px-5 py-3 border rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 text-sm pr-12"
+                        oninput="window.app.validatePwd(this.value)">
+                    <button type="button" onclick="window.app.togglePwd('new-password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg class="eye-open w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <svg class="eye-closed w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                    </button>
+                </div>
+                <div id="pw-rules-settings" class="grid grid-cols-2 gap-2 text-[11px] font-bold hidden">
+                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">8 caract. min</span></div>
+                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">1 majuscule</span></div>
+                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">1 minuscule</span></div>
+                    <div class="flex items-center gap-1.5"><span class="pw-dot w-2 h-2 rounded-full bg-slate-200 transition-colors"></span><span class="text-slate-400">1 chiffre</span></div>
+                </div>
+                <input type="password" id="confirm-new-password" required placeholder="Confirmer le nouveau mot de passe"
+                    class="w-full px-5 py-3 border rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 text-sm">
+                <button type="submit"
+                    class="w-full bg-indigo-600 text-white font-black py-3 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-[0.98] text-sm">
+                    Modifier le mot de passe
+                </button>
+            </form>
+        </div>`;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+
+    // Wire up password validation for settings modal
+    const pwInput = modal.querySelector('#new-password');
+    pwInput.addEventListener('input', () => {
+        const val = pwInput.value;
+        const rules = modal.querySelector('#pw-rules-settings');
+        const dots = rules.querySelectorAll('.pw-dot');
+        if (val.length > 0) rules.classList.remove('hidden');
+        else { rules.classList.add('hidden'); return; }
+        const checks = [val.length >= 8, /[A-Z]/.test(val), /[a-z]/.test(val), /[0-9]/.test(val)];
+        dots.forEach((dot, i) => {
+            if (checks[i]) { dot.classList.remove('bg-slate-200'); dot.classList.add('bg-indigo-500'); }
+            else { dot.classList.add('bg-slate-200'); dot.classList.remove('bg-indigo-500'); }
+        });
+    });
+}
+
+async function changePassword(e) {
+    e.preventDefault();
+    const newPwd = document.getElementById('new-password').value;
+    const confirmPwd = document.getElementById('confirm-new-password').value;
+    const errEl = document.getElementById('settings-error');
+    const successEl = document.getElementById('settings-success');
+    errEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+
+    if (newPwd !== confirmPwd) {
+        errEl.textContent = 'Les mots de passe ne correspondent pas.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+    if (newPwd.length < 8 || !/[A-Z]/.test(newPwd) || !/[a-z]/.test(newPwd) || !/[0-9]/.test(newPwd)) {
+        errEl.textContent = 'Le mot de passe doit contenir 8+ caractères, une majuscule, une minuscule et un chiffre.';
+        errEl.classList.remove('hidden');
+        return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPwd });
+    if (error) {
+        errEl.textContent = error.message;
+        errEl.classList.remove('hidden');
+    } else {
+        successEl.textContent = '✓ Mot de passe modifié avec succès.';
+        successEl.classList.remove('hidden');
+        setTimeout(() => {
+            const modal = document.getElementById('settingsModal');
+            if (modal) { modal.remove(); document.body.style.overflow = ''; }
+        }, 2000);
+    }
+}
+
+// --- ADMIN ACTIONS ---
+function openEditor(id = null) {
+    const res = id ? state.resources.find(r => r.id == id) : null;
+    const data = res || { id: '', title: '', content: '' };
+    document.getElementById('edit-resource-id').value = data.id;
+    document.getElementById('edit-title').value = data.title;
+    document.getElementById('modal-title').textContent = id && res ? 'Éditer la fiche' : 'Nouvelle fiche';
+    editorModal.classList.remove('hidden');
+
+    const q = getQuill();
+    if (data.content) {
+        q.clipboard.dangerouslyPasteHTML(data.content);
+    } else {
+        q.setContents([]);
+    }
+}
+
+adminAddBtn.addEventListener('click', () => openEditor());
+
+resourceForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-resource-id').value;
+    const title = document.getElementById('edit-title').value;
+    const q = getQuill();
+    const content = q.getSemanticHTML();
+
+    if (!title.trim()) return alert('Le titre est requis.');
+    if (!q.getText().trim()) return alert('Le contenu est requis.');
+
+    const cat = state.categories.find(c => c.slug === state.currentCategory);
+    if (!cat) return alert("Sélectionnez d'abord une catégorie !");
+
+    const payload = { title, content, category_id: cat.id };
+
+    let error;
+    if (id) {
+        const { error: err } = await supabase.from('resources').update(payload).eq('id', id);
+        error = err;
+    } else {
+        const { error: err } = await supabase.from('resources').insert(payload);
+        error = err;
+    }
+
+    if (error) {
+        alert("Erreur lors de l'enregistrement : " + error.message);
+    } else {
+        editorModal.classList.add('hidden');
+        await loadCategory(state.currentCategory);
+    }
+});
+
+async function deleteResource(id) {
+    if (!confirm("Supprimer cette fiche définitivement ?")) return;
+    const { error } = await supabase.from('resources').delete().eq('id', id);
+    if (error) {
+        alert("Erreur lors de la suppression : " + error.message);
+    } else {
+        state.activeResource = null;
+        resourceDisplay.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        await loadCategory(state.currentCategory);
+    }
+}
+
+const SEARCH_AI_URL = 'https://nywwmhmymusbnapblwoj.supabase.co/functions/v1/smooth-worker';
+
+const debouncedSearch = debounce(() => {
+    renderResourceList();
+    triggerAiSearch();
+}, 400);
+
+resourceSearch.addEventListener('input', (e) => {
+    state.searchQuery = e.target.value;
+    debouncedSearch();
+});
+
+// Enter key triggers immediate AI search
+resourceSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        renderResourceList();
+        triggerAiSearch();
+    }
+});
+
+let aiSearchController = null;
+
+async function triggerAiSearch() {
+    const query = state.searchQuery.trim();
+    const aiBox = document.getElementById('ai-search-box');
+
+    // Hide if query too short
+    if (query.length < 2) {
+        if (aiBox) aiBox.classList.add('hidden');
+        return;
+    }
+
+    // Show loading
+    if (aiBox) {
+        aiBox.classList.remove('hidden');
+        aiBox.innerHTML = '<div class="flex items-center gap-3 p-4"><div class="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><span class="text-xs font-bold text-slate-400">Recherche IA...</span></div>';
+    }
+
+    // Cancel previous request
+    if (aiSearchController) aiSearchController.abort();
+    aiSearchController = new AbortController();
+
+    try {
+        const resp = await fetch(SEARCH_AI_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+            signal: aiSearchController.signal,
+        });
+        const data = await resp.json();
+
+        if (!aiBox) return;
+
+        console.log('AI Search response:', data);
+
+        if (data.error) {
+            aiBox.innerHTML = '<div class="p-4 text-xs text-red-500 font-bold">' + escapeHtml(data.error) + '</div>';
+            return;
+        }
+
+        if (!data.lessons || data.lessons.length === 0) {
+            aiBox.innerHTML = '<div class="p-4 text-xs text-slate-400 font-medium">Aucun r\u00e9sultat trouv\u00e9.</div>';
+            return;
+        }
+
+        const lessonLinks = data.lessons.map(l =>
+            `<button onclick="window.app.loadResourceFromAnywhere(${l.id})" class="flex items-center gap-2 p-2 rounded-lg hover:bg-indigo-100/50 transition-all text-xs font-bold text-indigo-800 group text-left w-full">
+                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full group-hover:bg-indigo-600 shrink-0"></span>
+                <span>${escapeHtml(l.title)}</span>
+            </button>`
+        ).join('');
+
+        aiBox.innerHTML = `
+            <div class="p-4">
+                <div class="flex items-start gap-3 mb-3">
+                    <div class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0">IA</div>
+                    <p class="text-xs text-slate-600 font-medium leading-relaxed">${escapeHtml(data.answer)}</p>
+                </div>
+                <div class="pl-10 space-y-0.5">${lessonLinks}</div>
+            </div>`;
+        aiBox.classList.remove('hidden');
+
+    } catch (err) {
+        if (err.name !== 'AbortError' && aiBox) {
+            aiBox.classList.add('hidden');
+        }
+    }
+}
+
+// --- ADMIN CONSOLE LOGIC ---
+async function fetchAdminStats() {
+    try {
+        const [u, r, c, n] = await Promise.all([
+            supabase.from('profiles').select('*', { count: 'exact', head: true }),
+            supabase.from('resources').select('*', { count: 'exact', head: true }),
+            supabase.from('categories').select('*', { count: 'exact', head: true }),
+            supabase.from('news').select('*', { count: 'exact', head: true })
+        ]);
+        document.getElementById('stat-users').textContent = u.count ?? 0;
+        document.getElementById('stat-resources').textContent = r.count ?? 0;
+        document.getElementById('stat-categories').textContent = c.count ?? 0;
+        document.getElementById('stat-news').textContent = n.count ?? 0;
+    } catch (err) {
+        console.error('Erreur stats admin:', err);
+    }
+}
+
+function setAdminView(view) {
+    document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+        if (btn.dataset.view === view) {
+            btn.classList.add('bg-white', 'border-slate-200', 'active-admin-nav');
+            btn.classList.remove('text-slate-500');
+        } else {
+            btn.classList.remove('bg-white', 'border-slate-200', 'active-admin-nav');
+            btn.classList.add('text-slate-500');
+        }
+    });
+
+    switch (view) {
+        case 'users': renderAdminUsers(); break;
+        case 'content': renderAdminContent(); break;
+        case 'news': renderAdminNews(); break;
+        case 'links': renderAdminLinks(); break;
+    }
+}
+
+// --- ADMIN: USERS ---
+async function renderAdminUsers() {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des élèves...</div>`;
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+        adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+
+    adminViewContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900">Gestion des élèves</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] uppercase font-black text-slate-400 border-b">
+                        <th class="pb-4">Utilisateur</th>
+                        <th class="pb-4">R&ocirc;le</th>
+                        <th class="pb-4">Abonnement</th>
+                        <th class="pb-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm font-medium">
+                    ${(data || []).map(u => `
+                        <tr class="border-b last:border-0 hover:bg-slate-50/50">
+                            <td class="py-4">
+                                <p class="text-slate-900 font-bold">${escapeHtml(u.email || (u.id || '').substring(0, 8))}</p>
+                                <p class="text-[10px] text-slate-400">${escapeHtml((u.id || '').substring(0, 8))}</p>
+                            </td>
+                            <td class="py-4">
+                                <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase ${u.is_admin ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
+                                    ${u.is_admin ? 'ADMIN' : 'ÉLÈVE'}
+                                </span>
+                            </td>
+                            <td class="py-4">
+                                <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase ${u.subscription_status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}">
+                                    ${u.subscription_status === 'active' ? 'ABONNÉ' : 'INACTIF'}
+                                </span>
+                            </td>
+                            <td class="py-4 space-x-2">
+                                <button onclick="window.app.toggleAdmin('${escapeAttr(u.id)}', ${!!u.is_admin})" class="text-indigo-600 hover:underline text-xs font-bold">
+                                    ${u.is_admin ? 'Retirer Admin' : 'Nommer Admin'}
+                                </button>
+                                <button onclick="window.app.toggleSubscription('${escapeAttr(u.id)}', '${u.subscription_status || 'inactive'}')" class="text-xs font-bold ${u.subscription_status === 'active' ? 'text-red-500 hover:underline' : 'text-emerald-600 hover:underline'}">
+                                    ${u.subscription_status === 'active' ? 'Désactiver' : 'Activer'}
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+async function toggleAdmin(id, current) {
+    const { error } = await supabase.from('profiles').update({ is_admin: !current }).eq('id', id);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        renderAdminUsers();
+    }
+}
+
+async function toggleSubscription(id, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const { error } = await supabase.from('profiles').update({ subscription_status: newStatus }).eq('id', id);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        renderAdminUsers();
+    }
+}
+
+// --- ADMIN: CONTENT (FICHES) ---
+async function renderAdminContent() {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des fiches...</div>`;
+
+    const { data: allResources, error } = await supabase.from('resources').select('*, categories(name)').order('created_at', { ascending: false });
+    if (error) {
+        adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+
+    adminViewContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900">Gestion des fiches</h2>
+            <button onclick="window.app.adminAddResource()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouvelle fiche</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] uppercase font-black text-slate-400 border-b">
+                        <th class="pb-4">Titre</th>
+                        <th class="pb-4">Module</th>
+                        <th class="pb-4">Date</th>
+                        <th class="pb-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm font-medium">
+                    ${(allResources || []).map(r => `
+                        <tr class="border-b last:border-0 hover:bg-slate-50/50">
+                            <td class="py-4">
+                                <p class="text-slate-900 font-bold">${escapeHtml(r.title)}</p>
+                            </td>
+                            <td class="py-4">
+                                <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase bg-indigo-50 text-indigo-600">
+                                    ${escapeHtml(r.categories?.name || '—')}
+                                </span>
+                            </td>
+                            <td class="py-4 text-slate-400 text-xs">
+                                ${r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+                            </td>
+                            <td class="py-4 space-x-2">
+                                <button onclick="window.app.adminEditResource(${Number(r.id)})" class="text-indigo-600 hover:underline">Éditer</button>
+                                <button onclick="window.app.adminDeleteResource(${Number(r.id)})" class="text-red-500 hover:underline">Supprimer</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+async function adminAddResource() {
+    const cat = state.categories.length > 0 ? state.categories[0] : null;
+    if (!cat) return alert('Aucune catégorie disponible.');
+    openEditor(null);
+}
+
+async function adminEditResource(id) {
+    const { data, error } = await supabase.from('resources').select('*').eq('id', id).single();
+    if (error || !data) return alert('Fiche introuvable.');
+
+    const cat = state.categories.find(c => c.id === data.category_id);
+    if (cat) state.currentCategory = cat.slug;
+
+    // Push into state.resources temporarily so openEditor can find it
+    if (!state.resources.find(r => r.id == data.id)) {
+        state.resources.push(data);
+    }
+    openEditor(data.id);
+}
+
+async function adminDeleteResource(id) {
+    if (!confirm("Supprimer cette fiche définitivement ?")) return;
+    const { error } = await supabase.from('resources').delete().eq('id', id);
+    if (error) {
+        alert("Erreur: " + error.message);
+    } else {
+        renderAdminContent();
+        fetchAdminStats();
+    }
+}
+
+// --- ADMIN: NEWS ---
+async function renderAdminNews() {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des news...</div>`;
+
+    const { data, error } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+    if (error) {
+        adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+
+    adminViewContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900">Gestion des actualités</h2>
+            <button onclick="window.app.showNewsForm()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouvelle news</button>
+        </div>
+        <div id="admin-news-form" class="hidden mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <input type="hidden" id="admin-news-id">
+            <div class="space-y-3">
+                <input type="text" id="admin-news-title" placeholder="Titre de la news" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
+                <div class="flex gap-2">
+                    <button onclick="window.app.saveNews()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700">Enregistrer</button>
+                    <button onclick="document.getElementById('admin-news-form').classList.add('hidden')" class="px-6 py-2 text-slate-500 font-bold text-xs">Annuler</button>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-2">
+            ${(data || []).map(n => `
+                <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
+                    <div>
+                        <p class="font-bold text-slate-900">${escapeHtml(n.title)}</p>
+                        <p class="text-[10px] text-slate-400">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.app.editNews(${Number(n.id)}, '${escapeAttr(n.title)}')" class="text-indigo-600 hover:underline text-xs font-bold">Éditer</button>
+                        <button onclick="window.app.deleteNews(${Number(n.id)})" class="text-red-500 hover:underline text-xs font-bold">Supprimer</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function showNewsForm(id = null, title = '') {
+    const form = document.getElementById('admin-news-form');
+    if (!form) return;
+    document.getElementById('admin-news-id').value = id || '';
+    document.getElementById('admin-news-title').value = title;
+    form.classList.remove('hidden');
+}
+
+function editNews(id, title) {
+    showNewsForm(id, title);
+}
+
+async function saveNews() {
+    const id = document.getElementById('admin-news-id').value;
+    const title = document.getElementById('admin-news-title').value.trim();
+    if (!title) return alert('Le titre est requis.');
+
+    let error;
+    if (id) {
+        const { error: err } = await supabase.from('news').update({ title }).eq('id', id);
+        error = err;
+    } else {
+        const { error: err } = await supabase.from('news').insert({ title });
+        error = err;
+    }
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await fetchNews();
+        renderNews();
+        renderAdminNews();
+        fetchAdminStats();
+    }
+}
+
+async function deleteNews(id) {
+    if (!confirm('Supprimer cette news ?')) return;
+    const { error } = await supabase.from('news').delete().eq('id', id);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await fetchNews();
+        renderNews();
+        renderAdminNews();
+        fetchAdminStats();
+    }
+}
+
+// --- ADMIN: LINKS ---
+async function renderAdminLinks() {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des liens...</div>`;
+
+    const { data, error } = await supabase.from('links').select('*').order('position');
+    if (error) {
+        adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+
+    adminViewContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900">Gestion des liens</h2>
+            <button onclick="window.app.showLinkForm()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouveau lien</button>
+        </div>
+        <div id="admin-link-form" class="hidden mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <input type="hidden" id="admin-link-id">
+            <div class="space-y-3">
+                <input type="text" id="admin-link-label" placeholder="Label du lien" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
+                <input type="url" id="admin-link-url" placeholder="https://..." class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-medium">
+                <input type="number" id="admin-link-position" placeholder="Position (ordre)" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-medium" min="0">
+                <div class="flex gap-2">
+                    <button onclick="window.app.saveLink()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700">Enregistrer</button>
+                    <button onclick="document.getElementById('admin-link-form').classList.add('hidden')" class="px-6 py-2 text-slate-500 font-bold text-xs">Annuler</button>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-2">
+            ${(data || []).map(lk => `
+                <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
+                    <div>
+                        <p class="font-bold text-slate-900">${escapeHtml(lk.label)}</p>
+                        <p class="text-[10px] text-indigo-500 truncate max-w-xs">${escapeHtml(lk.url || '')}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.app.editLink(${Number(lk.id)}, '${escapeAttr(lk.label)}', '${escapeAttr(lk.url || '')}', ${lk.position || 0})" class="text-indigo-600 hover:underline text-xs font-bold">Éditer</button>
+                        <button onclick="window.app.deleteLink(${Number(lk.id)})" class="text-red-500 hover:underline text-xs font-bold">Supprimer</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function showLinkForm(id = null, label = '', url = '', position = 0) {
+    const form = document.getElementById('admin-link-form');
+    if (!form) return;
+    document.getElementById('admin-link-id').value = id || '';
+    document.getElementById('admin-link-label').value = label;
+    document.getElementById('admin-link-url').value = url;
+    document.getElementById('admin-link-position').value = position;
+    form.classList.remove('hidden');
+}
+
+function editLink(id, label, url, position) {
+    showLinkForm(id, label, url, position);
+}
+
+async function saveLink() {
+    const id = document.getElementById('admin-link-id').value;
+    const label = document.getElementById('admin-link-label').value.trim();
+    const url = document.getElementById('admin-link-url').value.trim();
+    const position = parseInt(document.getElementById('admin-link-position').value) || 0;
+
+    if (!label) return alert('Le label est requis.');
+
+    const payload = { label, url, position };
+
+    let error;
+    if (id) {
+        const { error: err } = await supabase.from('links').update(payload).eq('id', id);
+        error = err;
+    } else {
+        const { error: err } = await supabase.from('links').insert(payload);
+        error = err;
+    }
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await fetchLinks();
+        renderLinks();
+        renderAdminLinks();
+    }
+}
+
+async function deleteLink(id) {
+    if (!confirm('Supprimer ce lien ?')) return;
+    const { error } = await supabase.from('links').delete().eq('id', id);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await fetchLinks();
+        renderLinks();
+        renderAdminLinks();
+    }
+}
+
+// --- EXPOSE TO WINDOW ---
+window.app = {
+    loadCategory,
+    loadResource,
+    openEditor,
+    deleteResource,
+    setAdminView,
+    toggleAdmin,
+    adminAddResource,
+    adminEditResource,
+    adminDeleteResource,
+    showNewsForm,
+    editNews,
+    saveNews,
+    deleteNews,
+    showLinkForm,
+    editLink,
+    saveLink,
+    deleteLink,
+    switchAuthTab,
+    togglePwd,
+    validatePwd,
+    postComment,
+    deleteComment,
+    saveNote,
+    openMessages,
+    sendMessage,
+    deleteMessage,
+    closeMessages,
+    goHome,
+    toggleFavorite,
+    openFavorites,
+    loadResourceFromAnywhere,
+    openAllNotes,
+    openAllNews,
+    openLinkPopup,
+    openSettings,
+    changePassword,
+    logoutFromPending,
+    startPayment,
+    toggleSubscription,
+    openLegal,
+    editorInsertTag
+};
+
+const legalPages = {
+    mentions: `<h1 class="text-2xl font-black text-slate-900 mb-6 tracking-tight">Mentions L\u00e9gales</h1><div class="lesson-content text-sm"><h2>\u00c9diteur du site</h2><p>Le site <strong>Jeu de Prompts</strong> est \u00e9dit\u00e9 par :</p><p><strong>Marc ASSI</strong><br>Entrepreneur individuel (auto-entrepreneur)<br>SIRET : 523 628 279 00029<br>Adresse : 2 rue Georges Charpak, 92160 Antony, France<br>Email : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a><br>Non assujetti \u00e0 la TVA (article 293 B du CGI)</p><h2>Directeur de la publication</h2><p>Marc ASSI</p><h2>H\u00e9bergement</h2><p><strong>GitHub Pages</strong> (fichiers statiques)<br>GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, \u00c9tats-Unis</p><p><strong>Supabase</strong> (base de donn\u00e9es et authentification)<br>Supabase, Inc., 970 Toa Payoh North #07-04, Singapore 318992</p><p><strong>Stripe</strong> (paiements)<br>Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Irlande</p><h2>Propri\u00e9t\u00e9 intellectuelle</h2><p>L\u2019ensemble du contenu de ce site (textes, images, logos, vid\u00e9os, prompts, fiches, structure et design) est prot\u00e9g\u00e9 par le droit d\u2019auteur et reste la propri\u00e9t\u00e9 exclusive de Marc ASSI. Toute reproduction, diffusion ou exploitation, m\u00eame partielle, est strictement interdite sans autorisation \u00e9crite pr\u00e9alable.</p></div>`,
+
+    confidentialite: `<h1 class="text-2xl font-black text-slate-900 mb-6 tracking-tight">Politique de Confidentialit\u00e9</h1><div class="lesson-content text-sm"><p><em>Derni\u00e8re mise \u00e0 jour : 17 mars 2025</em></p><h2>Responsable du traitement</h2><p>Marc ASSI, 2 rue Georges Charpak, 92160 Antony.<br>Contact : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a></p><h2>Donn\u00e9es collect\u00e9es</h2><ul><li><strong>Inscription :</strong> nom, email, mot de passe (chiffr\u00e9 par Supabase Auth)</li><li><strong>Utilisation :</strong> fiches consult\u00e9es, notes, commentaires, messages, favoris</li><li><strong>Paiement :</strong> trait\u00e9 par Stripe. Aucune donn\u00e9e bancaire stock\u00e9e chez nous.</li></ul><h2>Finalit\u00e9s</h2><ul><li>G\u00e9rer votre compte et acc\u00e8s</li><li>Personnaliser votre exp\u00e9rience (progression, notes, favoris)</li><li>Messagerie avec l\u2019administrateur</li><li>G\u00e9rer votre abonnement</li></ul><p>Nous ne vendons jamais vos donn\u00e9es.</p><h2>Sous-traitants</h2><ul><li><strong>Supabase</strong> : h\u00e9bergement et auth</li><li><strong>Stripe</strong> : paiements</li><li><strong>GitHub</strong> : h\u00e9bergement fichiers</li></ul><h2>Dur\u00e9e de conservation</h2><ul><li>Donn\u00e9es de compte : tant que le compte est actif, puis 3 ans</li><li>Donn\u00e9es de paiement : conserv\u00e9es par Stripe (10 ans)</li></ul><h2>Vos droits (RGPD)</h2><p>Acc\u00e8s, rectification, suppression, portabilit\u00e9, opposition. Contact : <a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a></p><p>R\u00e9clamation possible aupr\u00e8s de la <strong>CNIL</strong>, 3 Place de Fontenoy, 75007 Paris.</p><h2>Cookies</h2><p>Uniquement des cookies techniques (session Supabase). Aucun cookie publicitaire.</p></div>`,
+
+    cgu: `<h1 class="text-2xl font-black text-slate-900 mb-6 tracking-tight">Conditions G\u00e9n\u00e9rales d\u2019Utilisation</h1><div class="lesson-content text-sm"><p><em>Derni\u00e8re mise \u00e0 jour : 17 mars 2025</em></p><h2>Article 1. Objet</h2><p>Les pr\u00e9sentes CGU r\u00e9gissent l\u2019utilisation de <strong>Jeu de Prompts</strong>, \u00e9dit\u00e9 par Marc ASSI. Jeu de Prompts est un assistant IA pour formateurs proposant fiches, prompts, workflows et espace communautaire.</p><h2>Article 2. Acc\u00e8s</h2><p>L\u2019acc\u00e8s au contenu n\u00e9cessite un compte valid\u00e9 et un abonnement actif.</p><h2>Article 3. Inscription</h2><p>L\u2019utilisateur fournit des informations exactes. Chaque compte est personnel et ne peut \u00eatre partag\u00e9.</p><h2>Article 4. Utilisation du contenu</h2><p>Le contenu est destin\u00e9 \u00e0 un usage personnel et professionnel. Il est interdit de :</p><ul><li>Reproduire ou redistribuer le contenu</li><li>Partager ses identifiants</li><li>Revendre le contenu sans autorisation</li></ul><h2>Article 5. Commentaires et messagerie</h2><p>L\u2019utilisateur respecte les r\u00e8gles de courtoisie. Tout contenu injurieux pourra \u00eatre supprim\u00e9. L\u2019administrateur peut suspendre un compte en cas de manquement.</p><h2>Article 6. Responsabilit\u00e9</h2><p>Marc ASSI ne saurait \u00eatre tenu responsable des r\u00e9sultats obtenus suite \u00e0 l\u2019utilisation des prompts, ni des interruptions techniques.</p><h2>Article 7. Propri\u00e9t\u00e9 intellectuelle</h2><p>Tous les contenus sont prot\u00e9g\u00e9s par le droit d\u2019auteur, propri\u00e9t\u00e9 de Marc ASSI.</p><h2>Article 8. Modification</h2><p>Les CGU peuvent \u00eatre modifi\u00e9es \u00e0 tout moment. Les utilisateurs seront notifi\u00e9s.</p><h2>Article 9. Droit applicable</h2><p>Droit fran\u00e7ais. Tribunaux de Nanterre.</p></div>`,
+
+    cgv: `<h1 class="text-2xl font-black text-slate-900 mb-6 tracking-tight">Conditions G\u00e9n\u00e9rales de Vente</h1><div class="lesson-content text-sm"><p><em>Derni\u00e8re mise \u00e0 jour : 17 mars 2025</em></p><h2>Article 1. Objet</h2><p>Les pr\u00e9sentes CGV r\u00e9gissent la vente d\u2019abonnements \u00e0 <strong>Jeu de Prompts</strong>, \u00e9dit\u00e9 par Marc ASSI (SIRET : 523 628 279 00029).</p><h2>Article 2. Services</h2><p>L\u2019abonnement donne acc\u00e8s \u00e0 toutes les fiches, prompts, nouveaux contenus, notes personnelles, favoris, messagerie et commentaires.</p><h2>Article 3. Tarifs</h2><ul><li><strong>Mensuel :</strong> 9,90 \u20ac TTC / mois</li><li><strong>Annuel :</strong> 99 \u20ac TTC / an (soit 8,25 \u20ac/mois)</li></ul><p>TVA non applicable (article 293 B du CGI).</p><h2>Article 4. Paiement</h2><p>Paiement en ligne par carte via <strong>Stripe</strong>. Aucune donn\u00e9e bancaire stock\u00e9e sur nos serveurs.</p><h2>Article 5. Dur\u00e9e et renouvellement</h2><p>Renouvellement automatique par tacite reconduction, sauf r\u00e9siliation.</p><h2>Article 6. R\u00e9siliation</h2><p>R\u00e9siliation \u00e0 tout moment par email (<a href="mailto:marcassi92@gmail.com">marcassi92@gmail.com</a>) ou messagerie interne. Prend effet \u00e0 la fin de la p\u00e9riode en cours.</p><h2>Article 7. R\u00e9tractation</h2><p>Marc ASSI rembourse int\u00e9gralement tout abonn\u00e9 insatisfait qui en fait la demande dans les <strong>14 jours</strong> suivant la souscription.</p><h2>Article 8. Acc\u00e8s</h2><p>Acc\u00e8s activ\u00e9 manuellement sous 24h apr\u00e8s r\u00e9ception du paiement.</p><h2>Article 9. Responsabilit\u00e9</h2><p>Marc ASSI fournit un contenu de qualit\u00e9 mais ne saurait \u00eatre tenu responsable des r\u00e9sultats obtenus.</p><h2>Article 10. Litiges</h2><p>Droit fran\u00e7ais. Tribunaux de Nanterre. M\u00e9diation possible (article L612-1 du Code de la consommation).</p></div>`
+};
+
+function editorInsertTag(open, close) {
+    const q = getQuill();
+    if (!q) return;
+    const range = q.getSelection(true);
+    if (range && range.length > 0) {
+        // Wrap selected text
+        const selectedText = q.getText(range.index, range.length);
+        q.deleteText(range.index, range.length);
+        q.insertText(range.index, open + selectedText + close, Quill.sources.USER);
+    } else {
+        // Insert at cursor with placeholder
+        const pos = range ? range.index : q.getLength();
+        const placeholder = close ? open + 'texte' + close : open;
+        q.insertText(pos, placeholder, Quill.sources.USER);
+    }
+}
+
+function openLegal(page) {
+    const content = legalPages[page];
+    if (!content) return;
+
+    const tabs = Object.entries(legalPages).map(([key, _]) => {
+        const names = { mentions: 'Mentions', confidentialite: 'Confidentialit\u00e9', cgu: 'CGU', cgv: 'CGV' };
+        const isActive = key === page;
+        return '<button onclick="window.app.openLegal(\'' + key + '\')" class="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ' +
+            (isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:text-indigo-600') + '">' + (names[key] || key) + '</button>';
+    }).join('');
+
+    // Remove existing modal
+    document.getElementById('legalModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'legalModal';
+    modal.className = 'fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm p-4 lg:p-6 overflow-y-auto flex items-start justify-center';
+    modal.onclick = (e) => { if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; } };
+    modal.innerHTML = `
+        <div class="max-w-3xl w-full bg-white rounded-[2.5rem] shadow-2xl p-6 lg:p-10 modal-enter mt-6 lg:mt-10">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-wrap gap-2">${tabs}</div>
+                <button onclick="document.getElementById('legalModal').remove(); document.body.style.overflow='';" class="text-slate-400 font-black text-xl hover:text-slate-900 transition-colors ml-4">&times;</button>
+            </div>
+            <div class="max-h-[70vh] overflow-y-auto custom-scrollbar">${content}</div>
+        </div>`;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
+
+const STRIPE_LINKS = {
+    monthly: 'https://buy.stripe.com/5kQ3cu9iV0AlgeCezB1ZS0K',
+    yearly: 'https://buy.stripe.com/bJe3cu0MpbeZ3rQ6351ZS0L'
+};
+
+function startPayment(plan) {
+    // Open Stripe directly — no account required to pay
+    window.open(STRIPE_LINKS[plan], '_blank');
+}
+
+// START
+try {
+    checkUser();
+} catch(e) {
+    console.error('Init error:', e);
+    document.body.innerHTML = '<div style="padding:2rem;color:red;font-weight:bold">Erreur init: ' + e.message + '</div>';
+}

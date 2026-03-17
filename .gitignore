@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+uploads/
+Améliorations.docx
+full_content.json
+start.bat
+search_ai.js
