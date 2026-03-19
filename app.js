@@ -171,6 +171,9 @@ function showSite() {
         adminAddBtn.classList.remove('hidden');
         adminPanelBtn.classList.remove('hidden');
         checkPendingUsers();
+    } else {
+        adminAddBtn.classList.add('hidden');
+        adminPanelBtn.classList.add('hidden');
     }
     checkUnreadMessages();
 }
@@ -254,6 +257,9 @@ async function logoutFromPending() {
     document.getElementById('pending-container')?.remove();
     state.user = null;
     state.isAdmin = false;
+    adminPanelBtn.classList.add('hidden');
+    adminAddBtn.classList.add('hidden');
+    adminConsole.classList.add('hidden');
     authContainer.classList.remove('hidden');
     switchAuthTab('login');
 }
@@ -381,6 +387,9 @@ logoutBtn.addEventListener('click', async () => {
     state.isAdmin = false;
     siteContainer.classList.add('hidden');
     document.getElementById('site-footer')?.classList.add('hidden');
+    adminPanelBtn.classList.add('hidden');
+    adminAddBtn.classList.add('hidden');
+    adminConsole.classList.add('hidden');
     authContainer.classList.remove('hidden');
     // Reset to login tab
     switchAuthTab('login');
@@ -1554,18 +1563,24 @@ async function deleteUser(id) {
     await supabase.from('comments').delete().eq('user_id', id);
     await supabase.from('notes').delete().eq('user_id', id);
     await supabase.from('favorites').delete().eq('user_id', id);
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    await supabase.from('profiles').delete().eq('id', id);
+    // Delete auth user via server-side RPC (requires Supabase function)
+    const { error } = await supabase.rpc('delete_auth_user', { user_id: id });
     if (error) {
-        alert('Erreur: ' + error.message);
-    } else {
-        renderAdminUsers();
-        fetchAdminStats();
+        alert('Données supprimées mais le compte Auth n\'a pas pu être supprimé : ' + error.message);
     }
+    renderAdminUsers();
+    fetchAdminStats();
 }
 
 // --- ADMIN: MESSAGES ---
 async function renderAdminMessages() {
     adminViewContainer.innerHTML = '<div class="p-20 text-center text-slate-400">Chargement des conversations...</div>';
+
+    // Mark all messages to admin as read
+    await supabase.from('private_messages').update({ is_read: true })
+        .eq('receiver_id', state.user.id).eq('is_read', false);
+    checkUnreadMessages();
 
     // Get all users who have exchanged messages with admin
     const { data: msgs } = await supabase

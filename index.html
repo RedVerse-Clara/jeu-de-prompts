@@ -213,6 +213,42 @@
                 </div>
             </div>
 
+            <!-- Pricing -->
+            <div class="max-w-3xl mx-auto px-6 pb-16">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-8 text-center">Une seule formule, tout inclus</h2>
+                <div class="bg-white rounded-[2.5rem] shadow-sm border-2 border-indigo-200 p-8 lg:p-10 relative overflow-hidden">
+                    <span class="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Acc&egrave;s complet</span>
+                    <h3 class="text-xl font-black text-slate-900 mb-2">JEU DE PROMPTS</h3>
+                    <p class="text-sm text-slate-500 font-medium mb-6">Tous les prompts, fiches, workflows et mises &agrave; jour. Messagerie directe avec Marc.</p>
+
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                        <button onclick="window.app.startPayment('monthly')"
+                            class="flex-1 bg-indigo-600 text-white text-center font-black py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-[0.98] cursor-pointer">
+                            <span class="text-2xl">9,90&euro;</span><span class="text-sm font-bold opacity-80"> / mois</span>
+                        </button>
+                        <button onclick="window.app.startPayment('yearly')"
+                            class="flex-1 bg-white text-indigo-600 text-center font-black py-4 rounded-2xl border-2 border-indigo-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer relative">
+                            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase">-17%</span>
+                            <span class="text-2xl">99&euro;</span><span class="text-sm font-bold opacity-70"> / an</span>
+                        </button>
+                    </div>
+
+                    <details class="text-sm text-slate-600">
+                        <summary class="font-bold text-indigo-600 cursor-pointer flex items-center gap-1 text-xs uppercase tracking-wide">+ de d&eacute;tails</summary>
+                        <ul class="mt-3 space-y-2 pl-4 text-xs font-medium">
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Acc&egrave;s &agrave; toutes les fiches et prompts</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Nouveaux contenus chaque semaine</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Notes personnelles et favoris</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Messagerie directe avec Marc</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Espace commentaires communautaire</li>
+                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Annulation &agrave; tout moment</li>
+                        </ul>
+                    </details>
+
+                    <p class="text-[10px] text-slate-400 mt-4 text-center">Paiement s&eacute;curis&eacute; par Stripe.</p>
+                </div>
+            </div>
+
             <!-- À propos -->
             <div class="max-w-5xl mx-auto px-6 pb-16">
                 <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-8 lg:p-12 overflow-hidden">
@@ -259,42 +295,6 @@
                             <p class="text-sm text-amber-800 font-black mt-2">Alors on retrousse nos manches, et on s'y met !</p>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Pricing -->
-            <div class="max-w-3xl mx-auto px-6 pb-16">
-                <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-8 text-center">Une seule formule, tout inclus</h2>
-                <div class="bg-white rounded-[2.5rem] shadow-sm border-2 border-indigo-200 p-8 lg:p-10 relative overflow-hidden">
-                    <span class="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Acc&egrave;s complet</span>
-                    <h3 class="text-xl font-black text-slate-900 mb-2">JEU DE PROMPTS</h3>
-                    <p class="text-sm text-slate-500 font-medium mb-6">Tous les prompts, fiches, workflows et mises &agrave; jour. Messagerie directe avec Marc.</p>
-
-                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                        <button onclick="window.app.startPayment('monthly')"
-                            class="flex-1 bg-indigo-600 text-white text-center font-black py-4 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-[0.98] cursor-pointer">
-                            <span class="text-2xl">9,90&euro;</span><span class="text-sm font-bold opacity-80"> / mois</span>
-                        </button>
-                        <button onclick="window.app.startPayment('yearly')"
-                            class="flex-1 bg-white text-indigo-600 text-center font-black py-4 rounded-2xl border-2 border-indigo-200 hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer relative">
-                            <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase">-17%</span>
-                            <span class="text-2xl">99&euro;</span><span class="text-sm font-bold opacity-70"> / an</span>
-                        </button>
-                    </div>
-
-                    <details class="text-sm text-slate-600">
-                        <summary class="font-bold text-indigo-600 cursor-pointer flex items-center gap-1 text-xs uppercase tracking-wide">+ de d&eacute;tails</summary>
-                        <ul class="mt-3 space-y-2 pl-4 text-xs font-medium">
-                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Acc&egrave;s &agrave; toutes les fiches et prompts</li>
-                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Nouveaux contenus chaque semaine</li>
-                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Notes personnelles et favoris</li>
-                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Messagerie directe avec Marc</li>
-                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Espace commentaires communautaire</li>
-                            <li class="flex items-center gap-2"><span class="text-indigo-500">&#10003;</span> Annulation &agrave; tout moment</li>
-                        </ul>
-                    </details>
-
-                    <p class="text-[10px] text-slate-400 mt-4 text-center">Paiement s&eacute;curis&eacute; par Stripe.</p>
                 </div>
             </div>
 

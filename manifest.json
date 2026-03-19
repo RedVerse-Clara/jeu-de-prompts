@@ -2,7 +2,7 @@
     "name": "Jeu de Prompts",
     "short_name": "JdP",
     "description": "Assistant IA pour Formateurs",
-    "start_url": "/index.php",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#f8fafc",
     "theme_color": "#4f46e5",
