@@ -8,7 +8,7 @@
 
     // Register Service Worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(function() {});
+        navigator.serviceWorker.register('sw.js?v=2').catch(function() {});
     }
 
     // Check dismiss cooldown (7 days)

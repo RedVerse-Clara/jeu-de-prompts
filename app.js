@@ -190,11 +190,12 @@ async function checkUnreadMessages() {
             .eq('receiver_id', state.user.id)
             .eq('is_read', false);
 
-        envelope.classList.remove('hidden');
         if (count > 0) {
+            envelope.classList.remove('hidden');
             badge.textContent = count;
             badge.classList.remove('hidden');
         } else {
+            envelope.classList.add('hidden');
             badge.classList.add('hidden');
         }
     } catch(e) {}
