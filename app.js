@@ -985,9 +985,10 @@ async function openMessages() {
         .order('created_at', { ascending: true });
 
     // Mark as read
-    await supabase.from('private_messages').update({ is_read: true })
+    const { error: markErr } = await supabase.from('private_messages').update({ is_read: true })
         .eq('sender_id', adminId).eq('receiver_id', state.user.id).eq('is_read', false);
-    checkUnreadMessages();
+    if (markErr) console.error('Mark read failed:', markErr.message);
+    await checkUnreadMessages();
 
     const msgList = (messages || []).map(m => {
         const isMine = m.sender_id === state.user.id;
@@ -1579,9 +1580,10 @@ async function renderAdminMessages() {
     adminViewContainer.innerHTML = '<div class="p-20 text-center text-slate-400">Chargement des conversations...</div>';
 
     // Mark all messages to admin as read
-    await supabase.from('private_messages').update({ is_read: true })
+    const { error: markErr } = await supabase.from('private_messages').update({ is_read: true })
         .eq('receiver_id', state.user.id).eq('is_read', false);
-    checkUnreadMessages();
+    if (markErr) console.error('Mark read failed:', markErr.message);
+    await checkUnreadMessages();
 
     // Get all users who have exchanged messages with admin
     const { data: msgs } = await supabase
@@ -1648,8 +1650,9 @@ async function renderAdminMessages() {
 
 async function openAdminConversation(partnerId, partnerName) {
     // Mark as read
-    await supabase.from('private_messages').update({ is_read: true })
+    const { error: markErr } = await supabase.from('private_messages').update({ is_read: true })
         .eq('sender_id', partnerId).eq('receiver_id', state.user.id).eq('is_read', false);
+    if (markErr) console.error('Mark read failed:', markErr.message);
     // Refresh envelope badge
     checkUnreadMessages();
 

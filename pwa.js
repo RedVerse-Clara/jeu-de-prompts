@@ -8,11 +8,11 @@
 
     // Register Service Worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js?v=2').catch(function() {});
+        navigator.serviceWorker.register('sw.js?v=3').catch(function() {});
     }
 
     // Check dismiss cooldown (7 days)
-    var dismissKey = 'jdp_pwa_dismiss';
+    var dismissKey = 'jdp_pwa_dismiss_v2';
     var dismissedAt = localStorage.getItem(dismissKey);
     if (dismissedAt && (Date.now() - parseInt(dismissedAt)) < 7 * 24 * 60 * 60 * 1000) {
         return;
