@@ -37,31 +37,47 @@
         setTimeout(function() { showBanner(true); }, 2000);
     }
 
+    var isMobile = window.innerWidth < 768;
+
     function showBanner(isIOSDevice) {
         var banner = document.createElement('div');
         banner.id = 'pwa-banner';
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:12px 16px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:white;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15)';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 16px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;display:flex;align-items:center;gap:10px;font-family:Outfit,sans-serif;font-size:0.85rem;box-shadow:0 2px 12px rgba(0,0,0,0.15)';
+
+        var icon = document.createElement('span');
+        icon.textContent = '\uD83D\uDCF2';
+        icon.style.fontSize = '1.3rem';
+        banner.appendChild(icon);
+
+        var text = document.createElement('span');
+        text.style.cssText = 'flex:1;line-height:1.3';
 
         if (isIOSDevice) {
-            banner.innerHTML = '<span>Installez Jeu de Prompts : appuyez sur <strong>Partager</strong> puis <strong>Sur l\'&eacute;cran d\'accueil</strong></span>';
+            text.innerHTML = 'Installez <b>Jeu de Prompts</b> : appuyez sur <b>Partager</b> <span style="font-size:1.1em">\u2399</span> puis <b>\u00ab\u00a0Sur l\'&eacute;cran d\'accueil\u00a0\u00bb</b>';
         } else {
-            banner.innerHTML = '<span>Installez Jeu de Prompts sur votre appareil</span>';
+            text.innerHTML = isMobile
+                ? 'Installez <b>Jeu de Prompts</b> sur votre t\u00e9l\u00e9phone pour un acc\u00e8s rapide\u00a0!'
+                : 'Installez <b>Jeu de Prompts</b> sur votre ordinateur pour un acc\u00e8s rapide\u00a0!';
+        }
+        banner.appendChild(text);
+
+        if (!isIOSDevice && deferredPrompt) {
             var installBtn = document.createElement('button');
             installBtn.textContent = 'Installer';
-            installBtn.style.cssText = 'background:white;color:#4f46e5;border:none;padding:6px 16px;border-radius:8px;font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer';
+            installBtn.style.cssText = 'background:#fff;color:#4f46e5;border:none;padding:6px 14px;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;white-space:nowrap';
             installBtn.addEventListener('click', function() {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
-                }
-                closeBanner();
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function(result) {
+                    if (result.outcome === 'accepted') closeBanner();
+                    deferredPrompt = null;
+                });
             });
             banner.appendChild(installBtn);
         }
 
         var closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '&times;';
-        closeBtn.style.cssText = 'background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:0 4px;opacity:0.7';
+        closeBtn.textContent = '\u2715';
+        closeBtn.style.cssText = 'background:none;border:none;color:rgba(255,255,255,0.7);font-size:1.1rem;cursor:pointer;padding:4px;line-height:1';
         closeBtn.addEventListener('click', closeBanner);
         banner.appendChild(closeBtn);
 
