@@ -2,7 +2,7 @@
  * Service Worker for Jeu de Prompts PWA
  * Cache-first for static assets, network-first for dynamic content.
  */
-const CACHE_NAME = 'jdp-cache-v3';
+const CACHE_NAME = 'jdp-cache-v4';
 const STATIC_ASSETS = [
     'style.css',
     'toc.js',
@@ -36,6 +36,11 @@ self.addEventListener('activate', function(event) {
 // Fetch: network-first for PHP, cache-first for static
 self.addEventListener('fetch', function(event) {
     var url = new URL(event.request.url);
+
+    // Skip external requests (analytics, CDN, etc.)
+    if (url.origin !== location.origin) {
+        return;
+    }
 
     // Network-first for dynamic content (PHP)
     if (url.pathname.endsWith('.php') || url.search) {
