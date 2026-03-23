@@ -46,6 +46,13 @@ let state = {
     searchQuery: ''
 };
 
+function clearSearch() {
+    state.searchQuery = '';
+    if (resourceSearch) resourceSearch.value = '';
+    const aiBox = document.getElementById('ai-search-box');
+    if (aiBox) { aiBox.classList.add('hidden'); aiBox.innerHTML = ''; }
+}
+
 // --- DOM ELEMENTS ---
 const authContainer = document.getElementById('auth-container');
 const siteContainer = document.getElementById('site-container');
@@ -643,6 +650,7 @@ function openLinkPopup(id) {
 async function loadCategory(slug) {
     state.currentCategory = slug;
     state.activeResource = null;
+    clearSearch();
     renderNav();
     showLoading();
 
@@ -994,6 +1002,7 @@ async function saveNote(resourceId) {
 
 // --- MESSAGING (Écrire à Marc) ---
 async function openMessages() {
+    clearSearch();
     // Find admin (Marc)
     const MARC_ID = 'f0ee9d68-0e34-4aef-87e1-eaf8aed5b882';
     const adminId = MARC_ID;
@@ -1130,6 +1139,7 @@ async function toggleFavorite(resourceId) {
 }
 
 async function openFavorites() {
+    clearSearch();
     emptyState.classList.add('hidden');
     resourceDisplay.classList.remove('hidden');
 
@@ -1177,6 +1187,7 @@ async function loadResourceFromAnywhere(id) {
 
 // --- ALL NOTES ---
 async function openAllNotes() {
+    clearSearch();
     emptyState.classList.add('hidden');
     resourceDisplay.classList.remove('hidden');
 
@@ -2216,6 +2227,7 @@ function insertEmoji(textareaId, emoji) {
 async function openCommunity() {
     state.currentCategory = null;
     state.activeResource = null;
+    clearSearch();
     renderNav();
     emptyState.classList.add('hidden');
     resourceDisplay.classList.remove('hidden');
