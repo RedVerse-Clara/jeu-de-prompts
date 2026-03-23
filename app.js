@@ -1375,11 +1375,9 @@ async function deleteResource(id) {
     }
 }
 
-const SEARCH_AI_URL = 'https://nywwmhmymusbnapblwoj.supabase.co/functions/v1/smooth-worker';
-
 const debouncedSearch = debounce(() => {
     renderResourceList();
-    triggerAiSearch();
+    triggerSmartSearch();
 }, 400);
 
 resourceSearch.addEventListener('input', (e) => {
@@ -1387,81 +1385,101 @@ resourceSearch.addEventListener('input', (e) => {
     debouncedSearch();
 });
 
-// Enter key triggers immediate AI search
 resourceSearch.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
         renderResourceList();
-        triggerAiSearch();
+        triggerSmartSearch();
     }
 });
 
-let aiSearchController = null;
-
-async function triggerAiSearch() {
-    const query = state.searchQuery.trim();
+// Smart search: searches across ALL fiches in ALL categories
+async function triggerSmartSearch() {
+    const query = state.searchQuery.trim().toLowerCase();
     const aiBox = document.getElementById('ai-search-box');
+    if (!aiBox) return;
 
-    // Hide if query too short
     if (query.length < 2) {
-        if (aiBox) aiBox.classList.add('hidden');
+        aiBox.classList.add('hidden');
         return;
     }
 
-    // Show loading
-    if (aiBox) {
-        aiBox.classList.remove('hidden');
-        aiBox.innerHTML = '<div class="flex items-center gap-3 p-4"><div class="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><span class="text-xs font-bold text-slate-400">Recherche IA...</span></div>';
-    }
-
-    // Cancel previous request
-    if (aiSearchController) aiSearchController.abort();
-    aiSearchController = new AbortController();
+    aiBox.classList.remove('hidden');
+    aiBox.innerHTML = '<div class="flex items-center gap-3 p-4"><div class="w-5 h-5 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div><span class="text-xs font-bold text-slate-400">Recherche dans les fiches...</span></div>';
 
     try {
-        const resp = await fetch(SEARCH_AI_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query }),
-            signal: aiSearchController.signal,
-        });
-        const data = await resp.json();
+        // Fetch all resources across all categories
+        const { data: allResources } = await supabase
+            .from('resources')
+            .select('id, title, content, category_id, categories(name)')
+            .order('position', { ascending: true, nullsFirst: false })
+            .order('created_at', { ascending: false });
 
-        if (!aiBox) return;
-
-        console.log('AI Search response:', data);
-
-        if (data.error) {
-            aiBox.innerHTML = '<div class="p-4 text-xs text-red-500 font-bold">' + escapeHtml(data.error) + '</div>';
+        if (!allResources || allResources.length === 0) {
+            aiBox.innerHTML = '<div class="p-4 text-xs text-slate-400 font-medium">Aucune fiche disponible.</div>';
             return;
         }
 
-        if (!data.lessons || data.lessons.length === 0) {
-            aiBox.innerHTML = '<div class="p-4 text-xs text-slate-400 font-medium">Aucun r\u00e9sultat trouv\u00e9.</div>';
+        // Split query into words for matching
+        const queryWords = query.split(/\s+/).filter(w => w.length >= 2);
+
+        // Score each resource
+        const scored = allResources.map(r => {
+            const title = (r.title || '').toLowerCase();
+            const content = (r.content || '').replace(/<[^>]*>/g, ' ').toLowerCase();
+            let score = 0;
+
+            // Exact full query match in title = highest
+            if (title.includes(query)) score += 100;
+            // Exact full query match in content
+            if (content.includes(query)) score += 30;
+
+            // Individual word matches
+            for (const w of queryWords) {
+                if (title.includes(w)) score += 20;
+                if (content.includes(w)) score += 5;
+            }
+
+            return { ...r, score };
+        }).filter(r => r.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
+
+        if (scored.length === 0) {
+            aiBox.innerHTML = `
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-7 h-7 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-sm flex-shrink-0">✨</div>
+                        <p class="text-xs text-slate-500 font-medium leading-relaxed">Je n'ai trouvé aucune fiche correspondant à <strong>"${escapeHtml(state.searchQuery.trim())}"</strong>. Essayez avec d'autres mots-clés, ou parcourez les catégories dans le menu.</p>
+                    </div>
+                </div>`;
             return;
         }
 
-        const lessonLinks = data.lessons.map(l =>
-            `<button onclick="window.app.loadResourceFromAnywhere(${l.id})" class="flex items-center gap-2 p-2 rounded-lg hover:bg-indigo-100/50 transition-all text-xs font-bold text-indigo-800 group text-left w-full">
-                <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full group-hover:bg-indigo-600 shrink-0"></span>
-                <span>${escapeHtml(l.title)}</span>
-            </button>`
-        ).join('');
+        const resultLinks = scored.map(r => {
+            const catLabel = r.categories?.name || '';
+            return `<button onclick="window.app.loadResourceFromAnywhere(${r.id})" class="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-indigo-50 transition-all text-left w-full group">
+                <span class="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-[9px] font-black shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">${r.title.charAt(0).toUpperCase()}</span>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-slate-800 truncate">${escapeHtml(r.title)}</p>
+                    ${catLabel ? `<p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${escapeHtml(catLabel)}</p>` : ''}
+                </div>
+            </button>`;
+        }).join('');
+
+        const msg = scored.length === 1
+            ? `J'ai trouvé <strong>1 fiche</strong> qui correspond à votre recherche :`
+            : `J'ai trouvé <strong>${scored.length} fiches</strong> qui correspondent à votre recherche :`;
 
         aiBox.innerHTML = `
             <div class="p-4">
                 <div class="flex items-start gap-3 mb-3">
-                    <div class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0">IA</div>
-                    <p class="text-xs text-slate-600 font-medium leading-relaxed">${escapeHtml(data.answer)}</p>
+                    <div class="w-7 h-7 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm flex-shrink-0">✨</div>
+                    <p class="text-xs text-slate-600 font-medium leading-relaxed">${msg}</p>
                 </div>
-                <div class="pl-10 space-y-0.5">${lessonLinks}</div>
+                <div class="pl-10 space-y-0.5">${resultLinks}</div>
             </div>`;
-        aiBox.classList.remove('hidden');
 
     } catch (err) {
-        if (err.name !== 'AbortError' && aiBox) {
-            aiBox.classList.add('hidden');
-        }
+        aiBox.classList.add('hidden');
     }
 }
 
