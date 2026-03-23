@@ -296,6 +296,16 @@ body {
     flex-wrap: nowrap;
 }
 
+/* Desktop nav buttons */
+.nav-btn-desktop {
+    border: 1px solid transparent;
+}
+
+/* Mobile menu slide transition */
+#mobile-menu-panel {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Custom Scrollbar */
 .custom-scrollbar {
     scrollbar-width: thin;

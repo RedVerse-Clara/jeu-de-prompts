@@ -453,71 +453,83 @@ async function renderNav() {
         if (count > 0) unreadBadge = '<span class="w-1.5 h-1.5 bg-red-500 rounded-full inline-block ml-1 notif-pulse"></span>';
     } catch(e) {}
 
-    // Desktop nav — fills available space, buttons stretch evenly
+    // Desktop nav — solid buttons, full width, adaptive text
     const catButtons = state.categories.map(cat => {
         const slug = escapeAttr(cat.slug);
         const name = escapeHtml(cat.name);
         const isActive = state.currentCategory === cat.slug;
         return `
         <button onclick="window.app.loadCategory('${slug}')"
-            class="nav-btn flex-1 py-1.5 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-center
-            ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:text-slate-800'}">
+            class="nav-btn-desktop flex-1 py-2 px-1 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap text-center transition-all
+            ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm'}">
             ${name}
         </button>`;
     }).join('');
 
     categoryNav.innerHTML = catButtons + `
-        <div class="w-px h-4 bg-slate-200 mx-1 self-center shrink-0"></div>
+        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
         <button onclick="window.app.openCommunity()"
-            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-emerald-600">
+            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+            bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:shadow-sm border border-emerald-100">
             🗣️ Communauté
         </button>
-        <div class="w-px h-4 bg-slate-200 mx-1 self-center shrink-0"></div>
+        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
         <button onclick="window.app.openFavorites()"
-            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-amber-600">
+            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+            bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:shadow-sm">
             ⭐ Favoris
         </button>
         <button onclick="window.app.openAllNotes()"
-            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-amber-700">
+            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+            bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:shadow-sm">
             📝 Notes
         </button>
         <button onclick="window.app.openMessages()"
-            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-cyan-600">
-            💬 Marc
+            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+            bg-slate-100 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 hover:shadow-sm">
+            💬 Marc ${unreadBadge}
         </button>`;
 
-    // Mobile nav
-    const mobileNav = document.querySelector('#mobile-category-nav > div');
-    if (mobileNav) {
+    // Mobile hamburger menu content
+    const mobileMenuPanel = document.getElementById('mobile-menu-panel');
+    if (mobileMenuPanel) {
         const mobileCats = state.categories.map(cat => {
             const slug = escapeAttr(cat.slug);
             const name = escapeHtml(cat.name);
             const isActive = state.currentCategory === cat.slug;
             return `
-            <button onclick="window.app.loadCategory('${slug}')"
-                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap
-                ${isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 bg-slate-50'}">
+            <button onclick="window.app.loadCategory('${slug}'); window.app.closeMobileMenu();"
+                class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-3
+                ${isActive ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-700 hover:bg-slate-100'}">
+                <span class="w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-slate-300'} shrink-0"></span>
                 ${name}
             </button>`;
         }).join('');
 
-        mobileNav.innerHTML = mobileCats + `
-            <button onclick="window.app.openCommunity()"
-                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-emerald-600">
-                🗣️ Communauté
-            </button>
-            <button onclick="window.app.openFavorites()"
-                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-amber-600">
-                ⭐ Favoris
-            </button>
-            <button onclick="window.app.openAllNotes()"
-                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-amber-700">
-                📝 Notes
-            </button>
-            <button onclick="window.app.openMessages()"
-                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-cyan-600">
-                💬 Marc
-            </button>`;
+        mobileMenuPanel.innerHTML = `
+            <div class="p-4 space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-4 mb-2">Catégories</p>
+                ${mobileCats}
+            </div>
+            <div class="border-t border-slate-100 p-4 space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-4 mb-2">Espace</p>
+                <button onclick="window.app.openCommunity(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-emerald-700 hover:bg-emerald-50 transition-all flex items-center gap-3">
+                    <span class="text-base">🗣️</span> Communauté
+                </button>
+                <button onclick="window.app.openFavorites(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-700 hover:bg-amber-50 transition-all flex items-center gap-3">
+                    <span class="text-base">⭐</span> Favoris
+                </button>
+                <button onclick="window.app.openAllNotes(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-700 hover:bg-amber-50 transition-all flex items-center gap-3">
+                    <span class="text-base">📝</span> Notes
+                </button>
+                <button onclick="window.app.openMessages(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-700 hover:bg-cyan-50 transition-all flex items-center gap-3">
+                    <span class="text-base">💬</span> Marc ${unreadBadge}
+                </button>
+            </div>`;
     }
 }
 
@@ -637,7 +649,7 @@ async function loadCategory(slug) {
     const cat = state.categories.find(c => c.slug === slug);
     if (!cat) { hideLoading(); return; }
 
-    const { data, error } = await supabase.from('resources').select('*').eq('category_id', cat.id).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('resources').select('*').eq('category_id', cat.id).order('position', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false });
     hideLoading();
 
     if (!error) {
@@ -1734,10 +1746,68 @@ async function sendAdminReply(e, receiverId) {
 async function renderAdminContent() {
     adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des fiches...</div>`;
 
-    const { data: allResources, error } = await supabase.from('resources').select('*, categories(name)').order('created_at', { ascending: false });
+    const { data: allResources, error } = await supabase.from('resources').select('*, categories(id, name, slug)').order('category_id').order('position', { ascending: true, nullsFirst: false }).order('created_at', { ascending: false });
     if (error) {
         adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}</div>`;
         return;
+    }
+
+    // Group by category
+    const grouped = {};
+    for (const r of (allResources || [])) {
+        const catName = r.categories?.name || 'Sans catégorie';
+        if (!grouped[catName]) grouped[catName] = [];
+        grouped[catName].push(r);
+    }
+
+    let tablesHtml = '';
+    for (const [catName, resources] of Object.entries(grouped)) {
+        const rows = resources.map((r, idx) => `
+            <tr class="border-b last:border-0 hover:bg-slate-50/50" data-id="${r.id}">
+                <td class="py-3 w-10 text-center">
+                    <div class="flex flex-col gap-0.5">
+                        <button onclick="window.app.moveResource(${Number(r.id)}, 'up')" class="text-slate-300 hover:text-indigo-600 transition-colors ${idx === 0 ? 'invisible' : ''}" title="Monter">
+                            <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                        </button>
+                        <span class="text-[9px] font-black text-slate-300">${r.position != null ? r.position : '—'}</span>
+                        <button onclick="window.app.moveResource(${Number(r.id)}, 'down')" class="text-slate-300 hover:text-indigo-600 transition-colors ${idx === resources.length - 1 ? 'invisible' : ''}" title="Descendre">
+                            <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                    </div>
+                </td>
+                <td class="py-3">
+                    <p class="text-slate-900 font-bold text-sm">${escapeHtml(r.title)}</p>
+                </td>
+                <td class="py-3 text-slate-400 text-xs">
+                    ${r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
+                </td>
+                <td class="py-3 space-x-2">
+                    <button onclick="window.app.adminEditResource(${Number(r.id)})" class="text-indigo-600 hover:underline text-xs">Éditer</button>
+                    <button onclick="window.app.adminDeleteResource(${Number(r.id)})" class="text-red-500 hover:underline text-xs">Supprimer</button>
+                </td>
+            </tr>
+        `).join('');
+
+        tablesHtml += `
+            <div class="mb-8">
+                <h3 class="text-sm font-black uppercase tracking-widest text-indigo-600 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-600 rounded-full"></span> ${escapeHtml(catName)}
+                    <span class="text-slate-400 text-[10px] font-bold normal-case">(${resources.length} fiche${resources.length > 1 ? 's' : ''})</span>
+                </h3>
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-[10px] uppercase font-black text-slate-400 border-b bg-slate-50/50">
+                                <th class="py-2 px-2 w-10 text-center">Ordre</th>
+                                <th class="py-2 px-2">Titre</th>
+                                <th class="py-2 px-2">Date</th>
+                                <th class="py-2 px-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm font-medium">${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
     }
 
     adminViewContainer.innerHTML = `
@@ -1745,40 +1815,41 @@ async function renderAdminContent() {
             <h2 class="text-2xl font-black text-slate-900">Gestion des fiches</h2>
             <button onclick="window.app.adminAddResource()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouvelle fiche</button>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="text-[10px] uppercase font-black text-slate-400 border-b">
-                        <th class="pb-4">Titre</th>
-                        <th class="pb-4">Module</th>
-                        <th class="pb-4">Date</th>
-                        <th class="pb-4">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="text-sm font-medium">
-                    ${(allResources || []).map(r => `
-                        <tr class="border-b last:border-0 hover:bg-slate-50/50">
-                            <td class="py-4">
-                                <p class="text-slate-900 font-bold">${escapeHtml(r.title)}</p>
-                            </td>
-                            <td class="py-4">
-                                <span class="px-2 py-1 rounded-md text-[10px] font-black uppercase bg-indigo-50 text-indigo-600">
-                                    ${escapeHtml(r.categories?.name || '—')}
-                                </span>
-                            </td>
-                            <td class="py-4 text-slate-400 text-xs">
-                                ${r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
-                            </td>
-                            <td class="py-4 space-x-2">
-                                <button onclick="window.app.adminEditResource(${Number(r.id)})" class="text-indigo-600 hover:underline">Éditer</button>
-                                <button onclick="window.app.adminDeleteResource(${Number(r.id)})" class="text-red-500 hover:underline">Supprimer</button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
+        ${tablesHtml}
     `;
+}
+
+async function moveResource(resourceId, direction) {
+    // Get all resources in the same category, ordered by position
+    const { data: res } = await supabase.from('resources').select('id, category_id, position').eq('id', resourceId).single();
+    if (!res) return;
+
+    const { data: siblings } = await supabase.from('resources').select('id, position')
+        .eq('category_id', res.category_id)
+        .order('position', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false });
+    if (!siblings) return;
+
+    // Ensure all have a position
+    for (let i = 0; i < siblings.length; i++) {
+        if (siblings[i].position == null) {
+            await supabase.from('resources').update({ position: (i + 1) * 10 }).eq('id', siblings[i].id);
+            siblings[i].position = (i + 1) * 10;
+        }
+    }
+
+    const idx = siblings.findIndex(s => s.id === resourceId);
+    if (idx === -1) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return;
+
+    // Swap positions
+    const posA = siblings[idx].position;
+    const posB = siblings[swapIdx].position;
+    await supabase.from('resources').update({ position: posB }).eq('id', siblings[idx].id);
+    await supabase.from('resources').update({ position: posA }).eq('id', siblings[swapIdx].id);
+
+    renderAdminContent();
 }
 
 async function adminAddResource() {
@@ -2001,6 +2072,29 @@ async function deleteLink(id) {
     }
 }
 
+// --- MOBILE MENU ---
+function toggleMobileMenu() {
+    const panel = document.getElementById('mobile-menu-panel');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    if (!panel || !overlay) return;
+    const isOpen = !panel.classList.contains('translate-x-full');
+    if (isOpen) {
+        closeMobileMenu();
+    } else {
+        panel.classList.remove('translate-x-full');
+        overlay.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeMobileMenu() {
+    const panel = document.getElementById('mobile-menu-panel');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    if (panel) panel.classList.add('translate-x-full');
+    if (overlay) overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 // --- COMMUNITY ---
 const COMMUNITY_EMOJIS = ['😀','😂','🤣','😍','🥰','😎','🤔','💡','🔥','👏','💪','🎯','🚀','✅','❤️','👍','👎','🙏','😅','🤩','😤','🤯','💬','📌','⚡','🎉','👀','💻','📚','🧠'];
 
@@ -2102,8 +2196,11 @@ async function openCommunity() {
                 <div id="community-reply-${post.id}" class="hidden ml-[52px] mt-4">
                     <form onsubmit="window.app.postCommunityComment(event, '${post.id}')">
                         <div class="bg-slate-50 rounded-xl p-2 border border-slate-100 shadow-inner">
-                            <textarea required rows="2" class="community-reply-text w-full bg-transparent border-none p-2 text-xs font-medium outline-none text-slate-700" placeholder="Votre réponse..."></textarea>
-                            <div class="flex justify-end p-1">
+                            <textarea id="community-reply-text-${post.id}" required rows="2" class="community-reply-text w-full bg-transparent border-none p-2 text-xs font-medium outline-none text-slate-700" placeholder="Votre réponse..."></textarea>
+                            <div class="flex justify-between items-center p-1">
+                                <div class="relative">
+                                    <button type="button" class="emoji-trigger text-slate-400 hover:text-slate-600 transition-colors text-sm px-1" onclick="window.app.toggleEmojiPicker('community-reply-text-${post.id}')" title="Emoji">😊</button>
+                                </div>
                                 <button type="submit" class="bg-emerald-600 text-white font-black py-1.5 px-4 rounded-lg text-[9px] uppercase active:scale-95 transition-all">Répondre</button>
                             </div>
                         </div>
@@ -2246,7 +2343,10 @@ window.app = {
     postCommunityComment,
     deleteCommunityPost,
     toggleEmojiPicker,
-    insertEmoji
+    insertEmoji,
+    toggleMobileMenu,
+    closeMobileMenu,
+    moveResource
 };
 
 function openEnvelopeMessages() {
