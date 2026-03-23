@@ -1411,12 +1411,11 @@ function cleanQuery(q) {
     return q.split(/\s+/).filter(w => w.length >= 2 && !SEARCH_STOP_WORDS.has(w.toLowerCase())).join(' ');
 }
 
-// Decide: single keyword → local search, multi-word → AI via smooth-worker
+// Decide: single word → local search, multi-word → AI via smooth-worker
 function triggerSearch() {
-    const raw = state.searchQuery.trim();
-    if (raw.length < 2) return;
-    const cleaned = cleanQuery(raw);
-    const words = cleaned.split(/\s+/).filter(w => w.length >= 2);
+    const query = state.searchQuery.trim();
+    if (query.length < 2) return;
+    const words = query.split(/\s+/).filter(w => w.length >= 2);
     if (words.length <= 1) {
         triggerLocalSearch();
     } else {
@@ -1486,9 +1485,7 @@ async function triggerLocalSearch() {
 
 // AI search via smooth-worker (for questions / multi-word queries)
 async function triggerAiSearch() {
-    const rawQuery = state.searchQuery.trim();
-    // Send cleaned query (no stop words) to GPT for better matching
-    const query = cleanQuery(rawQuery) || rawQuery;
+    const query = state.searchQuery.trim();
     const aiBox = document.getElementById('ai-search-box');
 
     if (query.length < 2) {
