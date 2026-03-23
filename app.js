@@ -1388,30 +1388,35 @@ async function deleteResource(id) {
 
 const SEARCH_AI_URL = 'https://nywwmhmymusbnapblwoj.supabase.co/functions/v1/smooth-worker';
 
-const debouncedSearch = debounce(() => {
-    renderResourceList();
-    triggerSearch();
-}, 400);
-
+// Search only triggers on Enter — no real-time search
 resourceSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
-    debouncedSearch();
+    // Only filter the current resource list locally (no AI call)
+    renderResourceList();
 });
 
 resourceSearch.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        renderResourceList();
         triggerSearch();
     }
 });
 
 let aiSearchController = null;
 
-// Decide: single word → local search, multi-word/question → AI via smooth-worker
+// French stop words — stripped before sending to AI
+const SEARCH_STOP_WORDS = new Set(['le','la','les','un','une','des','de','du','au','aux','ce','ces','cet','cette','mon','ma','mes','ton','ta','tes','son','sa','ses','notre','nos','votre','vos','leur','leurs','je','tu','il','elle','on','nous','vous','ils','elles','me','te','se','en','y','qui','que','quoi','dont','où','quel','quelle','quels','quelles','comment','pourquoi','quand','est','sont','suis','es','sommes','êtes','ai','as','avons','avez','ont','été','faire','fait','pour','par','avec','sans','dans','sur','sous','entre','vers','chez','plus','moins','très','trop','bien','mal','pas','ne','ni','et','ou','mais','donc','car','si','comme','tout','tous','toute','toutes','autre','autres','même','aussi','encore','déjà','ici','là','alors','puis','être','avoir','bon','bonne','dois','doit','faut','quel','quelle']);
+
+function cleanQuery(q) {
+    return q.split(/\s+/).filter(w => w.length >= 2 && !SEARCH_STOP_WORDS.has(w.toLowerCase())).join(' ');
+}
+
+// Decide: single keyword → local search, multi-word → AI via smooth-worker
 function triggerSearch() {
-    const query = state.searchQuery.trim();
-    const words = query.split(/\s+/).filter(w => w.length >= 2);
+    const raw = state.searchQuery.trim();
+    if (raw.length < 2) return;
+    const cleaned = cleanQuery(raw);
+    const words = cleaned.split(/\s+/).filter(w => w.length >= 2);
     if (words.length <= 1) {
         triggerLocalSearch();
     } else {
@@ -1481,7 +1486,9 @@ async function triggerLocalSearch() {
 
 // AI search via smooth-worker (for questions / multi-word queries)
 async function triggerAiSearch() {
-    const query = state.searchQuery.trim();
+    const rawQuery = state.searchQuery.trim();
+    // Send cleaned query (no stop words) to GPT for better matching
+    const query = cleanQuery(rawQuery) || rawQuery;
     const aiBox = document.getElementById('ai-search-box');
 
     if (query.length < 2) {
