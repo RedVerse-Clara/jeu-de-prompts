@@ -1337,6 +1337,13 @@ function openEditor(id = null) {
     document.getElementById('edit-resource-id').value = data.id;
     document.getElementById('edit-title').value = data.title;
     document.getElementById('modal-title').textContent = id && res ? 'Éditer la fiche' : 'Nouvelle fiche';
+
+    // Populate category select
+    const catSelect = document.getElementById('edit-category');
+    catSelect.innerHTML = state.categories.map(c =>
+        `<option value="${c.id}" ${(res && res.category_id === c.id) || (!res && state.currentCategory === c.slug) ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
+    ).join('');
+
     editorModal.classList.remove('hidden');
 
     const q = getQuill();
@@ -1359,10 +1366,10 @@ resourceForm.addEventListener('submit', async (e) => {
     if (!title.trim()) return alert('Le titre est requis.');
     if (!q.getText().trim()) return alert('Le contenu est requis.');
 
-    const cat = state.categories.find(c => c.slug === state.currentCategory);
-    if (!cat) return alert("Sélectionnez d'abord une catégorie !");
+    const categoryId = parseInt(document.getElementById('edit-category').value);
+    if (!categoryId) return alert("Sélectionnez une catégorie !");
 
-    const payload = { title, content, category_id: cat.id };
+    const payload = { title, content, category_id: categoryId };
 
     let error;
     if (id) {

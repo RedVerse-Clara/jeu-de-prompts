@@ -583,6 +583,12 @@
             <form id="resource-form" class="p-8 space-y-6 overflow-y-auto">
                 <input type="hidden" id="edit-resource-id">
                 <div>
+                    <label for="edit-category" class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Section</label>
+                    <select id="edit-category" required
+                        class="w-full px-6 py-4 border rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold bg-white">
+                    </select>
+                </div>
+                <div>
                     <label for="edit-title" class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Titre de
                         la fiche</label>
                     <input type="text" id="edit-title" required
@@ -590,6 +596,13 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Contenu</label>
+                    <!-- Custom formatting buttons (above Quill toolbar) -->
+                    <div id="custom-editor-toolbar" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-t-xl">
+                        <button type="button" onclick="window.app.editorInsertTag('[hl]','[/hl]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-all" title="Surlignage">Surligner</button>
+                        <button type="button" onclick="window.app.editorInsertTag('[s]','[/s]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-all line-through" title="Barr&eacute;">Barr&eacute;</button>
+                        <button type="button" onclick="window.app.editorInsertTag('[hr]','')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-all" title="Ligne horizontale">Ligne</button>
+                        <button type="button" onclick="window.app.editorInsertTag('[spoiler]','[/spoiler]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-indigo-100 text-indigo-600 rounded-md hover:bg-indigo-200 transition-all" title="Spoiler">Spoiler</button>
+                    </div>
                     <div id="editor-toolbar">
                         <span class="ql-formats">
                             <select class="ql-header">
@@ -633,13 +646,6 @@
                         <span class="ql-formats">
                             <button class="ql-clean"></button>
                         </span>
-                    </div>
-                    <!-- Custom formatting buttons -->
-                    <div id="custom-editor-toolbar" class="flex flex-wrap gap-1.5 p-2 bg-slate-50 border-x border-slate-200">
-                        <button type="button" onclick="window.app.editorInsertTag('[hl]','[/hl]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-all" title="Surlignage">Surligner</button>
-                        <button type="button" onclick="window.app.editorInsertTag('[s]','[/s]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-all line-through" title="Barr&eacute;">Barr&eacute;</button>
-                        <button type="button" onclick="window.app.editorInsertTag('[hr]','')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-slate-100 text-slate-500 rounded-md hover:bg-slate-200 transition-all" title="Ligne horizontale">Ligne</button>
-                        <button type="button" onclick="window.app.editorInsertTag('[spoiler]','[/spoiler]')" class="px-2.5 py-1 text-[9px] font-black uppercase bg-indigo-100 text-indigo-600 rounded-md hover:bg-indigo-200 transition-all" title="Spoiler">Spoiler</button>
                     </div>
                     <div id="edit-content"></div>
                 </div>

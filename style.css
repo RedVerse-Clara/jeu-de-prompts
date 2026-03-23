@@ -383,20 +383,19 @@ body {
     margin-bottom: 0.5rem;
 }
 
+#custom-editor-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 11;
+}
+
 #editor-toolbar {
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+    border-radius: 0;
     border-color: #e2e8f0;
     background: #f8fafc;
     padding: 0.5rem;
     position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-#custom-editor-toolbar {
-    position: sticky;
-    top: 40px;
+    top: 34px;
     z-index: 10;
 }
 
