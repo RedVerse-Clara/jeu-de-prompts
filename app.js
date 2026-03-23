@@ -51,6 +51,14 @@ function clearSearch() {
     if (resourceSearch) resourceSearch.value = '';
     const aiBox = document.getElementById('ai-search-box');
     if (aiBox) { aiBox.classList.add('hidden'); aiBox.innerHTML = ''; }
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) clearBtn.classList.add('hidden');
+}
+
+function clearSearchAndResults() {
+    clearSearch();
+    renderResourceList();
+    resourceSearch.focus();
 }
 
 // --- DOM ELEMENTS ---
@@ -1391,6 +1399,9 @@ const SEARCH_AI_URL = 'https://nywwmhmymusbnapblwoj.supabase.co/functions/v1/smo
 // Search only triggers on Enter — no real-time search
 resourceSearch.addEventListener('input', (e) => {
     state.searchQuery = e.target.value;
+    // Show/hide clear button
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !e.target.value.trim());
     // Only filter the current resource list locally (no AI call)
     renderResourceList();
 });
@@ -2435,7 +2446,8 @@ window.app = {
     insertEmoji,
     toggleMobileMenu,
     closeMobileMenu,
-    moveResource
+    moveResource,
+    clearSearchAndResults
 };
 
 function openEnvelopeMessages() {
