@@ -468,6 +468,11 @@ async function renderNav() {
 
     categoryNav.innerHTML = catButtons + `
         <div class="w-px h-4 bg-slate-200 mx-1 self-center shrink-0"></div>
+        <button onclick="window.app.openCommunity()"
+            class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-emerald-600">
+            🗣️ Communauté
+        </button>
+        <div class="w-px h-4 bg-slate-200 mx-1 self-center shrink-0"></div>
         <button onclick="window.app.openFavorites()"
             class="nav-btn py-1.5 px-2 rounded-lg text-[clamp(7px,0.65vw,11px)] font-black uppercase tracking-wide transition-all whitespace-nowrap text-slate-400 hover:text-amber-600">
             ⭐ Favoris
@@ -497,6 +502,10 @@ async function renderNav() {
         }).join('');
 
         mobileNav.innerHTML = mobileCats + `
+            <button onclick="window.app.openCommunity()"
+                class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-emerald-600">
+                🗣️ Communauté
+            </button>
             <button onclick="window.app.openFavorites()"
                 class="px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-slate-50 text-slate-500 hover:text-amber-600">
                 ⭐ Favoris
@@ -1992,6 +2001,200 @@ async function deleteLink(id) {
     }
 }
 
+// --- COMMUNITY ---
+const COMMUNITY_EMOJIS = ['😀','😂','🤣','😍','🥰','😎','🤔','💡','🔥','👏','💪','🎯','🚀','✅','❤️','👍','👎','🙏','😅','🤩','😤','🤯','💬','📌','⚡','🎉','👀','💻','📚','🧠'];
+
+function toggleEmojiPicker(textareaId) {
+    const existing = document.getElementById('emoji-picker-panel');
+    if (existing) { existing.remove(); return; }
+
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) return;
+    const btn = textarea.closest('form')?.querySelector('.emoji-trigger');
+
+    const panel = document.createElement('div');
+    panel.id = 'emoji-picker-panel';
+    panel.className = 'absolute bottom-full mb-2 left-0 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-50 grid grid-cols-10 gap-1 animate-fade-in';
+    panel.style.width = '280px';
+    panel.innerHTML = COMMUNITY_EMOJIS.map(e =>
+        `<button type="button" onclick="window.app.insertEmoji('${textareaId}','${e}')" class="w-6 h-6 flex items-center justify-center text-base hover:bg-slate-100 rounded-lg transition-all hover:scale-125">${e}</button>`
+    ).join('');
+
+    const wrapper = btn?.closest('.relative') || textarea.closest('.relative') || textarea.parentElement;
+    wrapper.style.position = 'relative';
+    wrapper.appendChild(panel);
+
+    // Close on click outside
+    setTimeout(() => {
+        document.addEventListener('click', function handler(e) {
+            if (!panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+                panel.remove();
+                document.removeEventListener('click', handler);
+            }
+        });
+    }, 10);
+}
+
+function insertEmoji(textareaId, emoji) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    textarea.value = textarea.value.substring(0, start) + emoji + textarea.value.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+    textarea.focus();
+    document.getElementById('emoji-picker-panel')?.remove();
+}
+
+async function openCommunity() {
+    state.currentCategory = null;
+    state.activeResource = null;
+    renderNav();
+    emptyState.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+    resourceList.innerHTML = '';
+
+    // Fetch community posts (comments with resource_id IS NULL)
+    const { data: posts, error } = await supabase
+        .from('comments')
+        .select('*')
+        .is('resource_id', null)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        resourceDisplay.innerHTML = `
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-12 text-center animate-fade-in">
+                <div class="text-5xl mb-6 opacity-20">🗣️</div>
+                <h2 class="text-2xl font-black text-slate-900 mb-3 tracking-tight">Communauté</h2>
+                <p class="text-slate-500 font-medium text-sm">Erreur de chargement: ${escapeHtml(error.message)}</p>
+            </div>`;
+        return;
+    }
+
+    const allPosts = posts || [];
+    const parents = allPosts.filter(c => !c.parent_id);
+    const replies = allPosts.filter(c => c.parent_id);
+    const count = parents.length;
+
+    let postsHtml = '';
+    for (const post of parents) {
+        const initial = (post.author_name || 'U').charAt(0).toUpperCase();
+        const postReplies = replies.filter(r => r.parent_id === post.id);
+        const dateStr = new Date(post.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }) + ' à ' + new Date(post.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        const canDelete = post.user_id === state.user.id || state.isAdmin;
+
+        postsHtml += `
+            <div class="group border-b border-slate-100 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center font-black text-emerald-600 text-sm">${initial}</div>
+                        <div>
+                            <p class="text-sm font-black text-slate-800 leading-none">${escapeHtml(post.author_name || 'Utilisateur')}</p>
+                            <p class="text-[10px] font-bold text-slate-300 uppercase tracking-tighter mt-1">${dateStr}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${canDelete ? `<button onclick="window.app.deleteCommunityPost('${post.id}')" class="text-red-400 text-[10px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">Supprimer</button>` : ''}
+                        <button onclick="document.getElementById('community-reply-${post.id}').classList.toggle('hidden')" class="text-emerald-600 text-[10px] font-black uppercase">Répondre</button>
+                    </div>
+                </div>
+                <p class="text-sm ml-[52px] font-medium leading-relaxed text-slate-600 whitespace-pre-line">${escapeHtml(post.content)}</p>
+                <div id="community-reply-${post.id}" class="hidden ml-[52px] mt-4">
+                    <form onsubmit="window.app.postCommunityComment(event, '${post.id}')">
+                        <div class="bg-slate-50 rounded-xl p-2 border border-slate-100 shadow-inner">
+                            <textarea required rows="2" class="community-reply-text w-full bg-transparent border-none p-2 text-xs font-medium outline-none text-slate-700" placeholder="Votre réponse..."></textarea>
+                            <div class="flex justify-end p-1">
+                                <button type="submit" class="bg-emerald-600 text-white font-black py-1.5 px-4 rounded-lg text-[9px] uppercase active:scale-95 transition-all">Répondre</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>`;
+
+        for (const rep of postReplies) {
+            const repInitial = (rep.author_name || 'U').charAt(0).toUpperCase();
+            const repDate = new Date(rep.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' }) + ' à ' + new Date(rep.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+            const canDeleteRep = rep.user_id === state.user.id || state.isAdmin;
+            postsHtml += `
+                <div class="ml-[52px] mt-3 pl-4 border-l-2 border-emerald-100 group/rep">
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-emerald-50 rounded-full flex items-center justify-center font-black text-emerald-500 text-[9px]">${repInitial}</div>
+                            <span class="text-xs font-black text-slate-800">${escapeHtml(rep.author_name || 'Utilisateur')}</span>
+                            <span class="text-[8px] font-bold text-slate-300 uppercase">${repDate}</span>
+                        </div>
+                        ${canDeleteRep ? `<button onclick="window.app.deleteCommunityPost('${rep.id}')" class="text-red-300 text-[8px] font-black uppercase opacity-0 group-hover/rep:opacity-100 transition-opacity">Supprimer</button>` : ''}
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium ml-8 whitespace-pre-line">${escapeHtml(rep.content)}</p>
+                </div>`;
+        }
+        postsHtml += `</div>`;
+    }
+
+    resourceDisplay.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 md:p-10 animate-fade-in">
+            <div class="flex items-center gap-3 mb-2">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">🗣️ Communauté</h2>
+                <span class="bg-emerald-100 text-emerald-600 text-xs px-3 py-1 rounded-full font-black">${count} sujet${count > 1 ? 's' : ''}</span>
+            </div>
+            <p class="text-sm text-slate-400 font-medium mb-8">Échangez librement avec les autres formateurs. Partagez vos questions, retours d'expérience et astuces.</p>
+
+            <form onsubmit="window.app.postCommunityComment(event, null)" class="mb-10">
+                <div class="bg-slate-50 rounded-2xl p-2 border border-slate-100 shadow-inner">
+                    <textarea id="community-text" required rows="3"
+                        class="w-full bg-transparent border-none p-3 text-sm font-medium outline-none placeholder-slate-400"
+                        placeholder="Lancez un sujet de discussion..."></textarea>
+                    <div class="flex justify-between items-center p-2">
+                        <div class="relative">
+                            <button type="button" class="emoji-trigger text-slate-400 hover:text-slate-600 transition-colors text-lg px-2" onclick="window.app.toggleEmojiPicker('community-text')" title="Ajouter un emoji">😊</button>
+                        </div>
+                        <button type="submit"
+                            class="bg-emerald-600 text-white font-black py-2 px-6 rounded-xl text-[10px] uppercase tracking-widest hover:bg-emerald-700 shadow-md active:scale-95 transition-all">
+                            Publier
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="space-y-0">
+                ${postsHtml || '<p class="text-center text-slate-400 font-medium py-10">Aucune discussion pour le moment. Soyez le premier à lancer un sujet !</p>'}
+            </div>
+        </div>`;
+}
+
+async function postCommunityComment(e, parentId) {
+    e.preventDefault();
+    const textarea = parentId
+        ? e.target.querySelector('.community-reply-text')
+        : document.getElementById('community-text');
+    const content = textarea.value.trim();
+    if (!content) return;
+
+    const email = state.user.email || '';
+    const name = email.split('@')[0] || 'Utilisateur';
+
+    const payload = {
+        resource_id: null,
+        user_id: state.user.id,
+        author_name: name,
+        content: content,
+        parent_id: parentId || null
+    };
+
+    const { error } = await supabase.from('comments').insert(payload);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await openCommunity();
+    }
+}
+
+async function deleteCommunityPost(commentId) {
+    if (!confirm('Supprimer ce message ?')) return;
+    await supabase.from('comments').delete().eq('parent_id', commentId);
+    await supabase.from('comments').delete().eq('id', commentId);
+    await openCommunity();
+}
+
 // --- EXPOSE TO WINDOW ---
 window.app = {
     loadCategory,
@@ -2038,7 +2241,12 @@ window.app = {
     deleteUser,
     openAdminConversation,
     sendAdminReply,
-    openEnvelopeMessages
+    openEnvelopeMessages,
+    openCommunity,
+    postCommunityComment,
+    deleteCommunityPost,
+    toggleEmojiPicker,
+    insertEmoji
 };
 
 function openEnvelopeMessages() {
