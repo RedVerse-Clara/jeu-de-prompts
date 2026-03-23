@@ -1595,6 +1595,7 @@ function setAdminView(view) {
 
     switch (view) {
         case 'users': renderAdminUsers(); break;
+        case 'sections': renderAdminSections(); break;
         case 'content': renderAdminContent(); break;
         case 'news': renderAdminNews(); break;
         case 'links': renderAdminLinks(); break;
@@ -1842,6 +1843,175 @@ async function sendAdminReply(e, receiverId) {
 }
 
 // --- ADMIN: CONTENT (FICHES) ---
+// --- ADMIN: SECTIONS (CATEGORIES) ---
+async function renderAdminSections() {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des sections...</div>`;
+
+    const { data, error } = await supabase.from('categories').select('*').order('position');
+    if (error) {
+        adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}</div>`;
+        return;
+    }
+
+    const rows = (data || []).map((cat, idx) => `
+        <tr class="border-b last:border-0 hover:bg-slate-50/50">
+            <td class="py-3 w-10 text-center">
+                <div class="flex flex-col gap-0.5">
+                    <button onclick="window.app.moveSection(${Number(cat.id)}, 'up')" class="text-slate-300 hover:text-indigo-600 transition-colors ${idx === 0 ? 'invisible' : ''}" title="Monter">
+                        <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                    </button>
+                    <span class="text-[9px] font-black text-slate-300">${cat.position != null ? cat.position : '—'}</span>
+                    <button onclick="window.app.moveSection(${Number(cat.id)}, 'down')" class="text-slate-300 hover:text-indigo-600 transition-colors ${idx === data.length - 1 ? 'invisible' : ''}" title="Descendre">
+                        <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                </div>
+            </td>
+            <td class="py-3">
+                <p class="text-slate-900 font-bold text-sm">${escapeHtml(cat.name)}</p>
+                <p class="text-[10px] text-slate-400 font-mono">${escapeHtml(cat.slug)}</p>
+            </td>
+            <td class="py-3 space-x-2">
+                <button onclick="window.app.editSection(${Number(cat.id)}, '${escapeAttr(cat.name)}', '${escapeAttr(cat.slug)}', ${cat.position || 0})" class="text-indigo-600 hover:underline text-xs font-bold">Renommer</button>
+                <button onclick="window.app.deleteSection(${Number(cat.id)}, '${escapeAttr(cat.name)}')" class="text-red-500 hover:underline text-xs font-bold">Supprimer</button>
+            </td>
+        </tr>
+    `).join('');
+
+    adminViewContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900">Gestion des sections</h2>
+            <button onclick="window.app.showSectionForm()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouvelle section</button>
+        </div>
+        <div id="admin-section-form" class="hidden mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <input type="hidden" id="admin-section-id">
+            <div class="space-y-3">
+                <input type="text" id="admin-section-name" placeholder="Nom de la section" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
+                <input type="text" id="admin-section-slug" placeholder="Slug (auto-généré si vide)" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-medium text-slate-500">
+                <input type="number" id="admin-section-position" placeholder="Position (ordre)" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-medium" min="0">
+                <div class="flex gap-2">
+                    <button onclick="window.app.saveSection()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700">Enregistrer</button>
+                    <button onclick="document.getElementById('admin-section-form').classList.add('hidden')" class="px-6 py-2 text-slate-500 font-bold text-xs">Annuler</button>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] uppercase font-black text-slate-400 border-b bg-slate-50/50">
+                        <th class="py-2 px-2 w-10 text-center">Ordre</th>
+                        <th class="py-2 px-2">Nom / Slug</th>
+                        <th class="py-2 px-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm font-medium">${rows}</tbody>
+            </table>
+        </div>
+    `;
+}
+
+function showSectionForm(id = null, name = '', slug = '', position = 0) {
+    const form = document.getElementById('admin-section-form');
+    if (!form) return;
+    document.getElementById('admin-section-id').value = id || '';
+    document.getElementById('admin-section-name').value = name;
+    document.getElementById('admin-section-slug').value = slug;
+    document.getElementById('admin-section-position').value = position;
+    form.classList.remove('hidden');
+}
+
+function editSection(id, name, slug, position) {
+    showSectionForm(id, name, slug, position);
+}
+
+async function saveSection() {
+    const id = document.getElementById('admin-section-id').value;
+    const name = document.getElementById('admin-section-name').value.trim();
+    let slug = document.getElementById('admin-section-slug').value.trim();
+    const position = parseInt(document.getElementById('admin-section-position').value) || 0;
+
+    if (!name) return alert('Le nom de la section est requis.');
+
+    // Auto-generate slug from name if empty
+    if (!slug) {
+        slug = name.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '');
+    }
+
+    const payload = { name, slug, position };
+
+    let error;
+    if (id) {
+        const { error: err } = await supabase.from('categories').update(payload).eq('id', id);
+        error = err;
+    } else {
+        const { error: err } = await supabase.from('categories').insert(payload);
+        error = err;
+    }
+
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await fetchCategories();
+        renderNav();
+        renderAdminSections();
+    }
+}
+
+async function deleteSection(id, name) {
+    // Check if section has resources
+    const { count } = await supabase.from('resources').select('*', { count: 'exact', head: true }).eq('category_id', id);
+    if (count > 0) {
+        if (!confirm(`La section "${name}" contient ${count} fiche(s). Supprimer la section ET toutes ses fiches ?`)) return;
+    } else {
+        if (!confirm(`Supprimer la section "${name}" ?`)) return;
+    }
+
+    // Delete resources in this category first
+    if (count > 0) {
+        const { error: resErr } = await supabase.from('resources').delete().eq('category_id', id);
+        if (resErr) return alert('Erreur suppression des fiches: ' + resErr.message);
+    }
+
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) {
+        alert('Erreur: ' + error.message);
+    } else {
+        await fetchCategories();
+        renderNav();
+        fetchAdminStats();
+        renderAdminSections();
+    }
+}
+
+async function moveSection(sectionId, direction) {
+    const { data: cats } = await supabase.from('categories').select('id, position').order('position');
+    if (!cats) return;
+
+    // Ensure all have a position
+    for (let i = 0; i < cats.length; i++) {
+        if (cats[i].position == null) {
+            await supabase.from('categories').update({ position: (i + 1) * 10 }).eq('id', cats[i].id);
+            cats[i].position = (i + 1) * 10;
+        }
+    }
+
+    const idx = cats.findIndex(c => c.id === sectionId);
+    if (idx === -1) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= cats.length) return;
+
+    const posA = cats[idx].position;
+    const posB = cats[swapIdx].position;
+    await supabase.from('categories').update({ position: posB }).eq('id', cats[idx].id);
+    await supabase.from('categories').update({ position: posA }).eq('id', cats[swapIdx].id);
+
+    await fetchCategories();
+    renderNav();
+    renderAdminSections();
+}
+
 async function renderAdminContent() {
     adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des fiches...</div>`;
 
@@ -2447,7 +2617,12 @@ window.app = {
     toggleMobileMenu,
     closeMobileMenu,
     moveResource,
-    clearSearchAndResults
+    clearSearchAndResults,
+    showSectionForm,
+    editSection,
+    saveSection,
+    deleteSection,
+    moveSection
 };
 
 function openEnvelopeMessages() {
