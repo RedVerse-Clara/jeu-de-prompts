@@ -5,6 +5,14 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// --- PASSWORD RECOVERY LISTENER ---
+supabase.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        // User arrived via password reset link — show change password modal
+        setTimeout(() => openSettings(), 500);
+    }
+});
+
 // --- UTILITIES ---
 function escapeHtml(str) {
     if (str == null) return '';
@@ -284,9 +292,11 @@ async function logoutFromPending() {
 function switchAuthTab(tab) {
     const loginF = document.getElementById('login-form');
     const registerF = document.getElementById('register-form');
+    const resetF = document.getElementById('reset-password-form');
     const tabL = document.getElementById('tab-login');
     const tabR = document.getElementById('tab-register');
     loginError.classList.add('hidden');
+    resetF.classList.add('hidden');
     if (tab === 'register') {
         loginF.classList.add('hidden');
         registerF.classList.remove('hidden');
@@ -326,6 +336,40 @@ function validatePwd(val) {
         else { dot.classList.add('bg-slate-200'); dot.classList.remove('bg-indigo-500'); }
     });
 }
+
+// --- RESET PASSWORD ---
+function showResetPassword() {
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+    document.getElementById('reset-password-form').classList.remove('hidden');
+    loginError.classList.add('hidden');
+    // Hide tabs
+    document.getElementById('tab-login').classList.remove('bg-white', 'shadow', 'text-indigo-700');
+    document.getElementById('tab-login').classList.add('text-slate-500');
+    document.getElementById('tab-register').classList.remove('bg-white', 'shadow', 'text-indigo-700');
+    document.getElementById('tab-register').classList.add('text-slate-500');
+}
+
+const resetForm = document.getElementById('reset-password-form');
+resetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value.trim();
+    loginError.classList.add('hidden');
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://jeudeprompts.fr/'
+    });
+
+    if (error) {
+        loginError.textContent = error.message;
+        loginError.classList.remove('hidden');
+    } else {
+        loginError.classList.add('hidden');
+        document.getElementById('successMsg').textContent = 'Un lien de réinitialisation a été envoyé à votre adresse e-mail.';
+        document.getElementById('successPopup').classList.remove('hidden');
+        switchAuthTab('login');
+    }
+});
 
 // --- LOGIN ---
 loginForm.addEventListener('submit', async (e) => {
@@ -2607,6 +2651,7 @@ window.app = {
     openLinkPopup,
     openSettings,
     changePassword,
+    showResetPassword,
     logoutFromPending,
     startPayment,
     toggleSubscription,
