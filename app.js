@@ -588,6 +588,17 @@ async function renderNav() {
                     class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-700 hover:bg-cyan-50 transition-all flex items-center gap-3">
                     <span class="text-base">💬</span> Marc ${unreadBadge}
                 </button>
+            </div>
+            <div class="border-t border-slate-100 p-4 space-y-1">
+                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-4 mb-2">Infos</p>
+                <button onclick="window.app.openAllNews(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-700 hover:bg-indigo-50 transition-all flex items-center gap-3">
+                    <span class="text-base">📢</span> Actualités
+                </button>
+                <button onclick="window.app.openMobileLinks(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-700 hover:bg-rose-50 transition-all flex items-center gap-3">
+                    <span class="text-base">🔗</span> Liens utiles
+                </button>
             </div>`;
     }
 }
@@ -694,6 +705,44 @@ function openLinkPopup(id) {
             </div>
             <div class="lesson-content text-sm font-medium leading-relaxed text-slate-700">${lk.content || ''}</div>
             ${lk.url ? `<a href="${escapeAttr(lk.url)}" target="_blank" class="inline-block mt-6 bg-indigo-600 text-white font-black py-2.5 px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all no-underline">Ouvrir le lien</a>` : ''}
+        </div>`;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
+
+function openMobileLinks() {
+    const links = state.links || [];
+    const html = links.map(lk => {
+        const label = escapeHtml(lk.label);
+        const hasContent = lk.content && lk.content.trim();
+        const url = lk.url ? escapeAttr(lk.url) : '#';
+        if (hasContent) {
+            return `
+            <button onclick="window.app.openLinkPopup(${lk.id}); document.getElementById('mobileLinksModal')?.remove(); document.body.style.overflow='hidden';"
+                class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-sm font-bold transition-all text-left">
+                <span class="w-2 h-2 bg-rose-400 rounded-full shrink-0"></span>
+                <span class="text-slate-700">${label}</span>
+            </button>`;
+        }
+        return `
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+            class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-sm font-bold transition-all text-left no-underline">
+            <span class="w-2 h-2 bg-rose-400 rounded-full shrink-0"></span>
+            <span class="text-slate-700">${label}</span>
+        </a>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'mobileLinksModal';
+    modal.className = 'fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm p-6 overflow-y-auto flex items-start justify-center';
+    modal.onclick = (e) => { if (e.target === modal) { modal.remove(); document.body.style.overflow = ''; } };
+    modal.innerHTML = `
+        <div class="max-w-lg w-full bg-white rounded-[2.5rem] shadow-2xl p-8 modal-enter mt-10">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-slate-900">Liens utiles</h2>
+                <button onclick="this.closest('#mobileLinksModal').remove(); document.body.style.overflow='';" class="text-slate-400 font-black text-xl hover:text-slate-900 transition-colors">✕</button>
+            </div>
+            <div class="space-y-1">${html || '<p class="text-slate-400 text-sm text-center py-6">Aucun lien pour le moment.</p>'}</div>
         </div>`;
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
@@ -2238,7 +2287,7 @@ async function renderAdminNews() {
                         <p class="text-[10px] text-slate-400">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="window.app.editNews(${Number(n.id)}, '${escapeAttr(n.title)}', '${escapeAttr(n.content || '')}')" class="text-indigo-600 hover:underline text-xs font-bold">Éditer</button>
+                        <button onclick="window.app.editNewsById(${Number(n.id)})" class="text-indigo-600 hover:underline text-xs font-bold">Éditer</button>
                         <button onclick="window.app.deleteNews(${Number(n.id)})" class="text-red-500 hover:underline text-xs font-bold">Supprimer</button>
                     </div>
                 </div>
@@ -2258,6 +2307,11 @@ function showNewsForm(id = null, title = '', content = '') {
 
 function editNews(id, title, content = '') {
     showNewsForm(id, title, content);
+}
+
+async function editNewsById(id) {
+    const { data } = await supabase.from('news').select('*').eq('id', id).single();
+    if (data) showNewsForm(data.id, data.title || '', data.content || '');
 }
 
 async function saveNews() {
@@ -2631,6 +2685,7 @@ window.app = {
     adminDeleteResource,
     showNewsForm,
     editNews,
+    editNewsById,
     saveNews,
     deleteNews,
     showLinkForm,
@@ -2654,6 +2709,7 @@ window.app = {
     openAllNotes,
     openAllNews,
     openLinkPopup,
+    openMobileLinks,
     openSettings,
     changePassword,
     showResetPassword,
