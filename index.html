@@ -597,7 +597,8 @@
             </div>
             <form id="resource-form" class="p-8 space-y-6 overflow-y-auto">
                 <input type="hidden" id="edit-resource-id">
-                <div>
+                <input type="hidden" id="edit-mode" value="resource">
+                <div id="edit-category-wrapper">
                     <label for="edit-category" class="block text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Section</label>
                     <select id="edit-category" required
                         class="w-full px-6 py-4 border rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold bg-white">

@@ -1425,6 +1425,9 @@ async function changePassword(e) {
 
 // --- ADMIN ACTIONS ---
 function openEditor(id = null) {
+    document.getElementById('edit-mode').value = 'resource';
+    document.getElementById('edit-category-wrapper').classList.remove('hidden');
+
     const res = id ? state.resources.find(r => r.id == id) : null;
     const data = res || { id: '', title: '', content: '' };
     document.getElementById('edit-resource-id').value = data.id;
@@ -1447,16 +1450,63 @@ function openEditor(id = null) {
     }
 }
 
+async function openNewsEditor(id = null) {
+    document.getElementById('edit-mode').value = 'news';
+    document.getElementById('edit-category-wrapper').classList.add('hidden');
+
+    let data = { id: '', title: '', content: '' };
+    if (id) {
+        const { data: n } = await supabase.from('news').select('*').eq('id', id).single();
+        if (n) data = n;
+    }
+    document.getElementById('edit-resource-id').value = data.id || '';
+    document.getElementById('edit-title').value = data.title || '';
+    document.getElementById('modal-title').textContent = id ? 'Éditer la news' : 'Nouvelle news';
+
+    editorModal.classList.remove('hidden');
+
+    const q = getQuill();
+    if (data.content) {
+        q.clipboard.dangerouslyPasteHTML(data.content);
+    } else {
+        q.setContents([]);
+    }
+}
+
 adminAddBtn.addEventListener('click', () => openEditor());
 
 resourceForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const mode = document.getElementById('edit-mode').value;
     const id = document.getElementById('edit-resource-id').value;
     const title = document.getElementById('edit-title').value;
     const q = getQuill();
     const content = q.getSemanticHTML();
 
     if (!title.trim()) return alert('Le titre est requis.');
+
+    if (mode === 'news') {
+        const payload = { title, content: q.getText().trim() ? content : null };
+        let error;
+        if (id) {
+            const { error: err } = await supabase.from('news').update(payload).eq('id', id);
+            error = err;
+        } else {
+            const { error: err } = await supabase.from('news').insert(payload);
+            error = err;
+        }
+        if (error) {
+            alert("Erreur : " + error.message);
+        } else {
+            editorModal.classList.add('hidden');
+            await fetchNews();
+            renderNews();
+            renderAdminNews();
+            fetchAdminStats();
+        }
+        return;
+    }
+
     if (!q.getText().trim()) return alert('Le contenu est requis.');
 
     const categoryId = parseInt(document.getElementById('edit-category').value);
@@ -2265,29 +2315,18 @@ async function renderAdminNews() {
     adminViewContainer.innerHTML = `
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-black text-slate-900">Gestion des actualités</h2>
-            <button onclick="window.app.showNewsForm()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouvelle news</button>
-        </div>
-        <div id="admin-news-form" class="hidden mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-            <input type="hidden" id="admin-news-id">
-            <div class="space-y-3">
-                <input type="text" id="admin-news-title" placeholder="Titre de la news" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
-                <textarea id="admin-news-content" placeholder="Contenu de la news (optionnel)" rows="4" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium resize-y"></textarea>
-                <div class="flex gap-2">
-                    <button onclick="window.app.saveNews()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700">Enregistrer</button>
-                    <button onclick="document.getElementById('admin-news-form').classList.add('hidden')" class="px-6 py-2 text-slate-500 font-bold text-xs">Annuler</button>
-                </div>
-            </div>
+            <button onclick="window.app.openNewsEditor()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouvelle news</button>
         </div>
         <div class="space-y-2">
             ${(data || []).map(n => `
                 <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
                     <div class="min-w-0 flex-1">
                         <p class="font-bold text-slate-900">${escapeHtml(n.title)}</p>
-                        ${n.content ? `<p class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(n.content.substring(0, 80))}${n.content.length > 80 ? '...' : ''}</p>` : ''}
-                        <p class="text-[10px] text-slate-400">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</p>
+                        ${n.content ? `<p class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(n.content.replace(/<[^>]*>/g, '').substring(0, 80))}</p>` : '<p class="text-xs text-slate-400 italic mt-0.5">Pas de contenu</p>'}
+                        <p class="text-[10px] text-slate-400 mt-0.5">${n.created_at ? new Date(n.created_at).toLocaleDateString() : ''}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="window.app.editNewsById(${Number(n.id)})" class="text-indigo-600 hover:underline text-xs font-bold">Éditer</button>
+                        <button onclick="window.app.openNewsEditor(${Number(n.id)})" class="text-indigo-600 hover:underline text-xs font-bold">Éditer</button>
                         <button onclick="window.app.deleteNews(${Number(n.id)})" class="text-red-500 hover:underline text-xs font-bold">Supprimer</button>
                     </div>
                 </div>
@@ -2296,49 +2335,6 @@ async function renderAdminNews() {
     `;
 }
 
-function showNewsForm(id = null, title = '', content = '') {
-    const form = document.getElementById('admin-news-form');
-    if (!form) return;
-    document.getElementById('admin-news-id').value = id || '';
-    document.getElementById('admin-news-title').value = title;
-    document.getElementById('admin-news-content').value = content;
-    form.classList.remove('hidden');
-}
-
-function editNews(id, title, content = '') {
-    showNewsForm(id, title, content);
-}
-
-async function editNewsById(id) {
-    const { data } = await supabase.from('news').select('*').eq('id', id).single();
-    if (data) showNewsForm(data.id, data.title || '', data.content || '');
-}
-
-async function saveNews() {
-    const id = document.getElementById('admin-news-id').value;
-    const title = document.getElementById('admin-news-title').value.trim();
-    const content = document.getElementById('admin-news-content').value.trim();
-    if (!title) return alert('Le titre est requis.');
-
-    const payload = { title, content: content || null };
-    let error;
-    if (id) {
-        const { error: err } = await supabase.from('news').update(payload).eq('id', id);
-        error = err;
-    } else {
-        const { error: err } = await supabase.from('news').insert(payload);
-        error = err;
-    }
-
-    if (error) {
-        alert('Erreur: ' + error.message);
-    } else {
-        await fetchNews();
-        renderNews();
-        renderAdminNews();
-        fetchAdminStats();
-    }
-}
 
 async function deleteNews(id) {
     if (!confirm('Supprimer cette news ?')) return;
@@ -2683,10 +2679,7 @@ window.app = {
     adminAddResource,
     adminEditResource,
     adminDeleteResource,
-    showNewsForm,
-    editNews,
-    editNewsById,
-    saveNews,
+    openNewsEditor,
     deleteNews,
     showLinkForm,
     editLink,
