@@ -502,97 +502,108 @@ async function fetchLinks() {
     if (!error) state.links = data || [];
 }
 
-// --- PRIORITY NAV (overflow → "..." dropdown) ---
-var _priorityNavTimer = null;
-function updatePriorityNav() {
-    // Debounce: only run once after all triggers settle
-    clearTimeout(_priorityNavTimer);
-    _priorityNavTimer = setTimeout(_doPriorityNav, 50);
-}
-
-function _doPriorityNav() {
+// --- PRIORITY NAV (overflow → "..." dropdown, ULIB pattern) ---
+function setupPriorityNav() {
     var container = document.getElementById('priorityNav');
     var visible = document.getElementById('category-nav');
     var moreBtn = document.getElementById('priorityMoreBtn');
     var dropdown = document.getElementById('priorityDropdown');
     if (!container || !visible || !moreBtn || !dropdown) return;
 
-    var items = visible.querySelectorAll('[data-priority-item]');
-    var separators = visible.querySelectorAll('.nav-separator');
+    var dropdownOpen = false;
 
-    // Reset: show everything
-    for (var i = 0; i < items.length; i++) items[i].style.display = '';
-    for (var s = 0; s < separators.length; s++) separators[s].style.display = '';
-    moreBtn.classList.add('hidden');
-    dropdown.innerHTML = '';
+    function updateNav() {
+        var items = visible.querySelectorAll('[data-priority-item]');
+        var separators = visible.querySelectorAll('.nav-separator');
 
-    // Measure without overflow clipping
-    visible.style.overflow = 'visible';
-    visible.style.flexShrink = '0';
-    void visible.offsetWidth;
+        // Reset: show everything
+        for (var i = 0; i < items.length; i++) items[i].style.display = '';
+        for (var s = 0; s < separators.length; s++) separators[s].style.display = '';
+        moreBtn.classList.add('hidden');
+        dropdown.innerHTML = '';
+        dropdownOpen = false;
+        dropdown.classList.add('hidden');
 
-    var availW = container.offsetWidth;
+        // Measure without overflow clipping
+        visible.style.overflow = 'visible';
+        visible.style.flexShrink = '0';
+        void visible.offsetWidth;
 
-    // Does everything fit?
-    if (visible.scrollWidth <= availW) {
+        var availW = container.offsetWidth;
+        var overflowing = [];
+
+        if (visible.scrollWidth <= availW) {
+            visible.style.overflow = '';
+            visible.style.flexShrink = '';
+            console.log('[PriorityNav] All fits, no overflow');
+            return;
+        }
+
+        // Hide items from end until it fits
+        var moreBtnW = 44;
+        while (visible.scrollWidth > availW - moreBtnW) {
+            var found = false;
+            for (var j = items.length - 1; j >= 0; j--) {
+                if (items[j].style.display !== 'none') {
+                    items[j].style.display = 'none';
+                    overflowing.unshift(items[j]);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) break;
+        }
+
         visible.style.overflow = '';
         visible.style.flexShrink = '';
-        return;
-    }
 
-    // Overflow detected — hide items from the end until it fits
-    var moreBtnW = 44;
-    var overflowing = [];
-    while (visible.scrollWidth > availW - moreBtnW) {
-        var found = false;
-        for (var j = items.length - 1; j >= 0; j--) {
-            if (items[j].style.display !== 'none') {
-                items[j].style.display = 'none';
-                overflowing.unshift(items[j]);
-                found = true;
-                break;
+        // Hide orphaned separators
+        for (var s2 = 0; s2 < separators.length; s2++) {
+            var prev = separators[s2].previousElementSibling;
+            var next = separators[s2].nextElementSibling;
+            while (prev && prev.classList.contains('nav-separator')) prev = prev.previousElementSibling;
+            while (next && next.classList.contains('nav-separator')) next = next.nextElementSibling;
+            var prevHidden = !prev || prev.style.display === 'none';
+            var nextHidden = !next || next.style.display === 'none' || !next.hasAttribute('data-priority-item');
+            if (prevHidden || nextHidden) separators[s2].style.display = 'none';
+        }
+
+        if (overflowing.length > 0) {
+            moreBtn.classList.remove('hidden');
+            for (var m = 0; m < overflowing.length; m++) {
+                var clone = overflowing[m].cloneNode(true);
+                clone.removeAttribute('data-priority-item');
+                clone.style.display = '';
+                clone.className = 'block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600';
+                dropdown.appendChild(clone);
             }
+            console.log('[PriorityNav] Overflow: ' + overflowing.length + ' items hidden, dropdown children: ' + dropdown.children.length);
         }
-        if (!found) break;
     }
 
-    visible.style.overflow = '';
-    visible.style.flexShrink = '';
+    // Toggle dropdown (exact ULIB pattern)
+    moreBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdownOpen = !dropdownOpen;
+        dropdown.classList.toggle('hidden', !dropdownOpen);
+        console.log('[PriorityNav] Toggle dropdown, open=' + dropdownOpen + ', children=' + dropdown.children.length);
+    });
+    document.addEventListener('click', function() {
+        dropdownOpen = false;
+        dropdown.classList.add('hidden');
+    });
 
-    // Hide orphaned separators
-    for (var s2 = 0; s2 < separators.length; s2++) {
-        var prev = separators[s2].previousElementSibling;
-        var next = separators[s2].nextElementSibling;
-        while (prev && prev.classList.contains('nav-separator')) prev = prev.previousElementSibling;
-        while (next && next.classList.contains('nav-separator')) next = next.nextElementSibling;
-        var prevHidden = !prev || prev.style.display === 'none';
-        var nextHidden = !next || next.style.display === 'none' || !next.hasAttribute('data-priority-item');
-        if (prevHidden || nextHidden) separators[s2].style.display = 'none';
-    }
-
-    if (overflowing.length > 0) {
-        moreBtn.classList.remove('hidden');
-        var dropdownHtml = '';
-        for (var m = 0; m < overflowing.length; m++) {
-            var el = overflowing[m];
-            var text = el.textContent.trim();
-            var onclick = el.getAttribute('onclick') || '';
-            dropdownHtml += '<button onclick="' + onclick + '" class="block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">' + text + '</button>';
-        }
-        dropdown.innerHTML = dropdownHtml;
+    // Run now + on resize + on fonts ready
+    updateNav();
+    window.addEventListener('resize', updateNav);
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(updateNav);
     }
 }
 
-// Close priority dropdown on outside click
-document.addEventListener('click', function(e) {
-    var dd = document.getElementById('priorityDropdown');
-    var btn = document.getElementById('priorityMoreBtn');
-    if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
-        dd.classList.add('hidden');
-    }
-});
-
-window.addEventListener('resize', updatePriorityNav);
+function updatePriorityNav() {
+    setupPriorityNav();
+}
 
 // --- RENDERING ---
 async function renderNav() {
