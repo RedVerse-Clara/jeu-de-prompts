@@ -503,7 +503,14 @@ async function fetchLinks() {
 }
 
 // --- PRIORITY NAV (overflow → "..." dropdown) ---
+var _priorityNavTimer = null;
 function updatePriorityNav() {
+    // Debounce: only run once after all triggers settle
+    clearTimeout(_priorityNavTimer);
+    _priorityNavTimer = setTimeout(_doPriorityNav, 50);
+}
+
+function _doPriorityNav() {
     var container = document.getElementById('priorityNav');
     var visible = document.getElementById('category-nav');
     var moreBtn = document.getElementById('priorityMoreBtn');
@@ -586,9 +593,6 @@ document.addEventListener('click', function(e) {
 });
 
 window.addEventListener('resize', updatePriorityNav);
-if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(updatePriorityNav);
-}
 
 // --- RENDERING ---
 async function renderNav() {
