@@ -1,26 +1,16 @@
 /**
  * Service Worker for Jeu de Prompts PWA
- * Cache-first for static assets, network-first for dynamic content.
+ * Network-first for HTML/CSS/JS (always fresh), cache fallback for offline.
+ * Cache-first only for images and fonts.
  */
-const CACHE_NAME = 'jdp-cache-v5';
-const STATIC_ASSETS = [
-    'style.css',
-    'toc.js',
-    'search_ai.js',
-    'manifest.json'
-];
+const CACHE_NAME = 'jdp-cache-v6';
 
-// Install: cache static assets
+// Install: activate immediately
 self.addEventListener('install', function(event) {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            return cache.addAll(STATIC_ASSETS);
-        })
-    );
     self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old caches, claim clients
 self.addEventListener('activate', function(event) {
     event.waitUntil(
         caches.keys().then(function(keys) {
@@ -33,37 +23,25 @@ self.addEventListener('activate', function(event) {
     self.clients.claim();
 });
 
-// Fetch: network-first for PHP, cache-first for static
+// Fetch handler
 self.addEventListener('fetch', function(event) {
     var url = new URL(event.request.url);
 
     // Skip external requests (analytics, CDN, etc.)
-    if (url.origin !== location.origin) {
-        return;
-    }
+    if (url.origin !== location.origin) return;
 
-    // Network-first for dynamic content (PHP)
-    if (url.pathname.endsWith('.php') || url.search) {
-        event.respondWith(
-            fetch(event.request).catch(function() {
-                return caches.match(event.request);
-            })
-        );
-        return;
-    }
-
-    // Cache-first for static assets
+    // Network-first for everything (cache as offline fallback)
     event.respondWith(
-        caches.match(event.request).then(function(cached) {
-            return cached || fetch(event.request).then(function(response) {
-                if (response.ok) {
-                    var clone = response.clone();
-                    caches.open(CACHE_NAME).then(function(cache) {
-                        cache.put(event.request, clone);
-                    });
-                }
-                return response;
-            });
+        fetch(event.request).then(function(response) {
+            if (response.ok) {
+                var clone = response.clone();
+                caches.open(CACHE_NAME).then(function(cache) {
+                    cache.put(event.request, clone);
+                });
+            }
+            return response;
+        }).catch(function() {
+            return caches.match(event.request);
         })
     );
 });
