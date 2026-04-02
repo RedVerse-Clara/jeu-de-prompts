@@ -502,114 +502,55 @@ async function fetchLinks() {
     if (!error) state.links = data || [];
 }
 
-// --- PRIORITY NAV (overflow → "..." dropdown, ULIB pattern) ---
-var _priorityNavReady = false;
-var _priorityNavUpdate = null;
+// --- PRIORITY NAV: simple overflow "..." dropdown ---
+// No measurement. Nav clips with overflow:hidden. "..." always present if nav overflows.
+// Dropdown always contains ALL items for easy access.
+var _priorityListenersSet = false;
 
 function updatePriorityNav() {
-    if (_priorityNavUpdate) {
-        // Already set up — just re-run the measurement
-        _priorityNavUpdate();
-        return;
-    }
-
-    var container = document.getElementById('priorityNav');
-    var visible = document.getElementById('category-nav');
+    var nav = document.getElementById('category-nav');
     var moreBtn = document.getElementById('priorityMoreBtn');
     var dropdown = document.getElementById('priorityDropdown');
-    if (!container || !visible || !moreBtn || !dropdown) return;
+    if (!nav || !moreBtn || !dropdown) return;
 
-    var dropdownOpen = false;
+    // Build dropdown with ALL nav items
+    var items = nav.querySelectorAll('[data-priority-item]');
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+        var text = items[i].textContent.trim();
+        var onclick = items[i].getAttribute('onclick') || '';
+        html += '<button onclick="' + onclick.replace(/"/g, '&quot;') + ';document.getElementById(\'priorityDropdown\').classList.add(\'hidden\');" class="block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">' + text + '</button>';
+    }
+    dropdown.innerHTML = html;
 
-    function doUpdate() {
-        if (dropdownOpen) return; // Don't re-run while dropdown is open
-
-        var items = visible.querySelectorAll('[data-priority-item]');
-        var separators = visible.querySelectorAll('.nav-separator');
-
-        for (var i = 0; i < items.length; i++) items[i].style.display = '';
-        for (var s = 0; s < separators.length; s++) separators[s].style.display = '';
+    // Show "..." only if nav actually overflows
+    if (nav.scrollWidth > nav.clientWidth + 2) {
+        moreBtn.classList.remove('hidden');
+    } else {
         moreBtn.classList.add('hidden');
-        dropdown.innerHTML = '';
-        dropdown.classList.add('hidden');
-
-        visible.style.overflow = 'visible';
-        visible.style.flexShrink = '0';
-        void visible.offsetWidth;
-
-        var availW = container.offsetWidth;
-        var overflowing = [];
-
-        if (visible.scrollWidth <= availW) {
-            visible.style.overflow = '';
-            visible.style.flexShrink = '';
-            return;
-        }
-
-        var moreBtnW = 44;
-        while (visible.scrollWidth > availW - moreBtnW) {
-            var found = false;
-            for (var j = items.length - 1; j >= 0; j--) {
-                if (items[j].style.display !== 'none') {
-                    items[j].style.display = 'none';
-                    overflowing.unshift(items[j]);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) break;
-        }
-
-        visible.style.overflow = '';
-        visible.style.flexShrink = '';
-
-        for (var s2 = 0; s2 < separators.length; s2++) {
-            var prev = separators[s2].previousElementSibling;
-            var next = separators[s2].nextElementSibling;
-            while (prev && prev.classList.contains('nav-separator')) prev = prev.previousElementSibling;
-            while (next && next.classList.contains('nav-separator')) next = next.nextElementSibling;
-            var prevHidden = !prev || prev.style.display === 'none';
-            var nextHidden = !next || next.style.display === 'none' || !next.hasAttribute('data-priority-item');
-            if (prevHidden || nextHidden) separators[s2].style.display = 'none';
-        }
-
-        if (overflowing.length > 0) {
-            moreBtn.classList.remove('hidden');
-            for (var m = 0; m < overflowing.length; m++) {
-                var clone = overflowing[m].cloneNode(true);
-                clone.removeAttribute('data-priority-item');
-                clone.style.display = '';
-                clone.className = 'block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600';
-                dropdown.appendChild(clone);
-            }
-        }
     }
 
-    // Store reference for future calls
-    _priorityNavUpdate = doUpdate;
-
-    // Set up event listeners ONCE
-    moreBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        dropdownOpen = !dropdownOpen;
-        dropdown.classList.toggle('hidden', !dropdownOpen);
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!moreBtn.contains(e.target)) {
-            dropdownOpen = false;
-            dropdown.classList.add('hidden');
-        }
-    });
-
-    var resizeTimer = null;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(doUpdate, 150);
-    });
-
-    // First run
-    doUpdate();
+    // Set up toggle listeners ONCE
+    if (!_priorityListenersSet) {
+        _priorityListenersSet = true;
+        moreBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', function(e) {
+            if (!moreBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+        window.addEventListener('resize', function() {
+            if (nav.scrollWidth > nav.clientWidth + 2) {
+                moreBtn.classList.remove('hidden');
+            } else {
+                moreBtn.classList.add('hidden');
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
 }
 
 // --- RENDERING ---
