@@ -502,55 +502,8 @@ async function fetchLinks() {
     if (!error) state.links = data || [];
 }
 
-// --- PRIORITY NAV: simple overflow "..." dropdown ---
-// No measurement. Nav clips with overflow:hidden. "..." always present if nav overflows.
-// Dropdown always contains ALL items for easy access.
-var _priorityListenersSet = false;
-
 function updatePriorityNav() {
-    var nav = document.getElementById('category-nav');
-    var moreBtn = document.getElementById('priorityMoreBtn');
-    var dropdown = document.getElementById('priorityDropdown');
-    if (!nav || !moreBtn || !dropdown) return;
-
-    // Build dropdown with ALL nav items
-    var items = nav.querySelectorAll('[data-priority-item]');
-    var html = '';
-    for (var i = 0; i < items.length; i++) {
-        var text = items[i].textContent.trim();
-        var onclick = items[i].getAttribute('onclick') || '';
-        html += '<button onclick="' + onclick.replace(/"/g, '&quot;') + ';document.getElementById(\'priorityDropdown\').classList.add(\'hidden\');" class="block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">' + text + '</button>';
-    }
-    dropdown.innerHTML = html;
-
-    // Show "..." only if nav actually overflows
-    if (nav.scrollWidth > nav.clientWidth + 2) {
-        moreBtn.classList.remove('hidden');
-    } else {
-        moreBtn.classList.add('hidden');
-    }
-
-    // Set up toggle listeners ONCE
-    if (!_priorityListenersSet) {
-        _priorityListenersSet = true;
-        moreBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            dropdown.classList.toggle('hidden');
-        });
-        document.addEventListener('click', function(e) {
-            if (!moreBtn.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
-        window.addEventListener('resize', function() {
-            if (nav.scrollWidth > nav.clientWidth + 2) {
-                moreBtn.classList.remove('hidden');
-            } else {
-                moreBtn.classList.add('hidden');
-                dropdown.classList.add('hidden');
-            }
-        });
-    }
+    // No-op: scroll nav handles overflow via CSS
 }
 
 // --- RENDERING ---
@@ -571,33 +524,28 @@ async function renderNav() {
         const name = escapeHtml(cat.name);
         const isActive = state.currentCategory === cat.slug;
         return `
-        <button onclick="window.app.loadCategory('${slug}')" data-priority-item
-            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap text-center transition-all
+        <button onclick="window.app.loadCategory('${slug}')"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap text-center transition-all
             ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm'}">
             ${name}
         </button>`;
     }).join('');
 
     categoryNav.innerHTML = catButtons + `
-        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0 nav-separator"></div>
-        <button onclick="window.app.openCommunity()" data-priority-item
-            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
+        <button onclick="window.app.openCommunity()"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:shadow-sm border border-emerald-100">
             🗣️ Communauté
         </button>
-        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0 nav-separator"></div>
-        <button onclick="window.app.openFavorites()" data-priority-item
-            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
+        <button onclick="window.app.openFavorites()"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:shadow-sm">
             ⭐ Favoris
         </button>
-        <button onclick="window.app.openAllNotes()" data-priority-item
-            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+        <button onclick="window.app.openAllNotes()"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:shadow-sm">
             📝 Notes
         </button>
-        <button onclick="window.app.openMessages()" data-priority-item
-            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+        <button onclick="window.app.openMessages()"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-slate-100 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 hover:shadow-sm">
             💬 Marc ${unreadBadge}
         </button>`;

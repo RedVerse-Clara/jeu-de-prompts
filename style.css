@@ -290,9 +290,21 @@ body {
     }
 }
 
-/* Desktop nav: no wrap, overflow handled by priority nav JS */
+/* Desktop nav: horizontal scroll */
 #category-nav {
     flex-wrap: nowrap;
+    -ms-overflow-style: none; /* IE */
+}
+
+/* Hide scrollbar but keep scroll functional */
+.nav-scroll::-webkit-scrollbar {
+    height: 0px;
+}
+
+.nav-scroll {
+    scrollbar-width: none; /* Firefox */
+    mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
 }
 
 /* Desktop nav buttons */

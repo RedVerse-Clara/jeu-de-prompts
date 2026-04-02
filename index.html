@@ -387,16 +387,9 @@
                     JEU DE <span class="text-indigo-600">PROMPTS</span>
                 </span>
             </a>
-            <div id="priorityNav" class="hidden xl:flex items-center shrink min-w-0 relative flex-1">
-                <nav id="category-nav" role="navigation" aria-label="Menu principal"
-                    class="flex items-center gap-1 overflow-hidden">
-                </nav>
-                <button id="priorityMoreBtn" class="hidden ml-1 px-2.5 py-1.5 bg-slate-100 rounded-xl text-[11px] xl:text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer" type="button">
-                    &#x2022;&#x2022;&#x2022;
-                </button>
-                <div id="priorityDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 min-w-[180px]">
-                </div>
-            </div>
+            <nav id="category-nav" role="navigation" aria-label="Menu principal"
+                class="hidden xl:flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scroll-smooth nav-scroll">
+            </nav>
             <div class="flex items-center gap-2 flex-shrink-0 ml-auto">
                 <button id="msg-envelope" onclick="window.app.openEnvelopeMessages()" class="relative hidden p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all" aria-label="Messages">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
