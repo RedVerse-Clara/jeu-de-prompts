@@ -328,6 +328,16 @@ body {
     background: transparent;
 }
 
+/* Thicker scrollbar for article content area */
+#resource-display-wrapper::-webkit-scrollbar {
+    width: 7px;
+}
+
+#resource-display-wrapper {
+    scrollbar-width: thin;
+    scrollbar-color: #c7d2fe transparent;
+}
+
 /* Global thin scrollbar */
 ::-webkit-scrollbar {
     width: 4px;
