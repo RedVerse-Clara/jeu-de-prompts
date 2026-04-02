@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a8cd9e80-8934-45bf-8a9f-154577b95f8e"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
@@ -391,7 +391,7 @@
                 <nav id="category-nav" role="navigation" aria-label="Menu principal"
                     class="flex items-center gap-1 overflow-hidden">
                 </nav>
-                <button id="priorityMoreBtn" class="hidden ml-1 px-2.5 py-1.5 bg-slate-100 rounded-xl text-[11px] xl:text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-all whitespace-nowrap flex-shrink-0" type="button">
+                <button id="priorityMoreBtn" onclick="var dd=document.getElementById('priorityDropdown'); dd.classList.toggle('hidden'); event.stopPropagation();" class="hidden ml-1 px-2.5 py-1.5 bg-slate-100 rounded-xl text-[11px] xl:text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer" type="button">
                     &#x2022;&#x2022;&#x2022;
                 </button>
                 <div id="priorityDropdown" class="hidden absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 min-w-[180px]">
@@ -732,7 +732,7 @@
         }
     });
     </script>
-    <script src="app.js?v=5" type="module"></script>
+    <script src="app.js?v=6" type="module"></script>
     <script defer src="toc.js"></script>
     <script defer src="pwa.js?v=3"></script>
 </body>

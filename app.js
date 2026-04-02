@@ -575,22 +575,14 @@ function updatePriorityNav() {
     }
 }
 
-// Priority nav dropdown — event delegation on #priorityNav
-(function initPriorityDropdown() {
-    document.addEventListener('click', function(e) {
-        var btn = document.getElementById('priorityMoreBtn');
-        var dd = document.getElementById('priorityDropdown');
-        if (!btn || !dd) return;
-
-        if (btn.contains(e.target)) {
-            // Toggle dropdown
-            dd.classList.toggle('hidden');
-        } else if (!dd.contains(e.target)) {
-            // Click outside — close
-            dd.classList.add('hidden');
-        }
-    });
-})();
+// Close priority dropdown on outside click
+document.addEventListener('click', function(e) {
+    var dd = document.getElementById('priorityDropdown');
+    var btn = document.getElementById('priorityMoreBtn');
+    if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.add('hidden');
+    }
+});
 
 window.addEventListener('resize', updatePriorityNav);
 if (document.fonts && document.fonts.ready) {

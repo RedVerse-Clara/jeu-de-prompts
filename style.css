@@ -349,21 +349,26 @@ body {
 
 /* Thicker scrollbar for article content area */
 #resource-display-wrapper::-webkit-scrollbar {
-    width: 8px;
+    width: 8px !important;
 }
 
 #resource-display-wrapper::-webkit-scrollbar-thumb {
-    background: #a5b4fc;
-    border-radius: 10px;
+    background: #a5b4fc !important;
+    border-radius: 10px !important;
 }
 
 #resource-display-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #818cf8;
+    background: #6366f1 !important;
+}
+
+#resource-display-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9 !important;
+    border-radius: 10px !important;
 }
 
 #resource-display-wrapper {
     scrollbar-width: auto;
-    scrollbar-color: #a5b4fc transparent;
+    scrollbar-color: #a5b4fc #f1f5f9;
 }
 
 /* Animations */
