@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog &mdash; Jeu de Prompts</title>
+    <meta name="description" content="Articles, tutoriels et retours d'exp&eacute;rience sur l'IA pour les formateurs ind&eacute;pendants. Par Marc ASSI.">
+    <link rel="icon" type="image/png" href="../Logo Jeu de Prompts.png">
+    <link rel="canonical" href="https://jeudeprompts.fr/blog/">
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jeudeprompts.fr/blog/">
+    <meta property="og:title" content="Blog &mdash; Jeu de Prompts">
+    <meta property="og:description" content="Articles, tutoriels et retours d'exp&eacute;rience sur l'IA pour les formateurs ind&eacute;pendants.">
+    <meta property="og:image" content="https://jeudeprompts.fr/Marc.png">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="Jeu de Prompts">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Blog &mdash; Jeu de Prompts">
+    <meta name="twitter:description" content="Articles et tutoriels IA pour formateurs ind&eacute;pendants.">
+    <meta name="twitter:image" content="https://jeudeprompts.fr/Marc.png">
+    <!-- Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <!-- Analytics -->
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="a8cd9e80-8934-45bf-8a9f-154577b95f8e"></script>
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Blog Jeu de Prompts",
+        "url": "https://jeudeprompts.fr/blog/",
+        "description": "Articles, tutoriels et retours d'expérience sur l'IA pour les formateurs indépendants.",
+        "author": {
+            "@type": "Person",
+            "name": "Marc ASSI",
+            "url": "https://jeudeprompts.fr"
+        },
+        "blogPost": [
+            {
+                "@type": "BlogPosting",
+                "headline": "C’est ouvert ! Pour de vrai ! 🎉",
+                "url": "https://jeudeprompts.fr/blog/cest-ouvert-pour-de-vrai.html",
+                "datePublished": "2026-03-27T09:40:07.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "JeudePrompts.fr est là. Vendredi 27 mars, c'est officiel. 🎉",
+                "url": "https://jeudeprompts.fr/blog/jeudepromptsfr-est-la-vendredi-27.html",
+                "datePublished": "2026-03-20T10:05:48.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "L'IA au service des formateurs indépendants ! 🚀",
+                "url": "https://jeudeprompts.fr/blog/lia-au-service-des-formateurs-independants.html",
+                "datePublished": "2026-03-13T08:39:37.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "J’ai codé une vraie appli grâce à l’IA. Pas du bricolage. Une vraie appli ! 🛠️🤯",
+                "url": "https://jeudeprompts.fr/blog/jai-code-une-vraie-appli-grace-a.html",
+                "datePublished": "2026-02-25T12:08:50.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Créer des chansons pédagogiques pour l’apprentissage des langues",
+                "url": "https://jeudeprompts.fr/blog/creer-des-chansons-pedagogiques-pour.html",
+                "datePublished": "2026-02-13T11:24:57.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Comment j’ai “prompté” mon propre Trello",
+                "url": "https://jeudeprompts.fr/blog/comment-jai-prompte-mon-propre-trello.html",
+                "datePublished": "2026-02-06T09:20:18.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Workflow de réalisation de vidéos IA sans frais",
+                "url": "https://jeudeprompts.fr/blog/workflow-de-realisation-de-videos.html",
+                "datePublished": "2026-01-30T11:31:53.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "🔺Négocier 100k€ avec l’IA",
+                "url": "https://jeudeprompts.fr/blog/negocier-100k-avec-lia.html",
+                "datePublished": "2026-01-23T10:50:36.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "IA et Ecole : le guide 2026 🏫",
+                "url": "https://jeudeprompts.fr/blog/ia-et-ecole-le-guide-2026.html",
+                "datePublished": "2026-01-16T17:14:09.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "L'IA est votre nouveau Directeur Marketing",
+                "url": "https://jeudeprompts.fr/blog/lia-est-votre-nouveau-directeur-marketing.html",
+                "datePublished": "2026-01-09T10:26:39.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "2026 sans brouillard : transformez vos souvenirs de 2025 en plan de bataille avec l'IA",
+                "url": "https://jeudeprompts.fr/blog/2026-sans-brouillard-transformez.html",
+                "datePublished": "2025-12-26T08:48:38.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "GPT 5.2 contre Gemini 3 : On clôture le duel avec un cadeau pour vous !",
+                "url": "https://jeudeprompts.fr/blog/gpt-52-contre-gemini-3-on-cloture.html",
+                "datePublished": "2025-12-19T09:59:33.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "GPT 5.1 vs Gemini 3 : Le Duel Final (Partie 3) - Le Choc du Code",
+                "url": "https://jeudeprompts.fr/blog/gpt-51-vs-gemini-3-le-duel-final.html",
+                "datePublished": "2025-12-12T08:18:19.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "GPT-5.1 vs Gemini 3 : le duel des images",
+                "url": "https://jeudeprompts.fr/blog/gpt-51-vs-gemini-3-le-duel-des-images.html",
+                "datePublished": "2025-12-05T09:32:49.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Je compare GPT 5.1 avec GEMINI 3 [Partie 1/3]",
+                "url": "https://jeudeprompts.fr/blog/je-compare-gpt-51-avec-gemini-3-partie.html",
+                "datePublished": "2025-11-28T07:47:03.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Marre du sensationnalisme autour de l'IA !",
+                "url": "https://jeudeprompts.fr/blog/marre-du-sensationnalisme-autour.html",
+                "datePublished": "2025-09-26T07:49:18.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Comment limiter (vraiment) les hallucinations de ChatGPT ? 🤯🤖",
+                "url": "https://jeudeprompts.fr/blog/comment-limiter-vraiment-les-hallucinations.html",
+                "datePublished": "2025-09-19T09:13:40.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Créer son CRM léger avec GPT5",
+                "url": "https://jeudeprompts.fr/blog/creer-son-crm-leger-avec-gpt5.html",
+                "datePublished": "2025-09-05T08:21:02.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Et si on arrêtait d’accuser l’IA de tous les maux ?",
+                "url": "https://jeudeprompts.fr/blog/et-si-on-arretait-daccuser-lia-de.html",
+                "datePublished": "2025-06-27T11:55:56.000Z"
+            },
+            {
+                "@type": "BlogPosting",
+                "headline": "Ce que GPT sait (vraiment) de vous et comment garder le contrôle",
+                "url": "https://jeudeprompts.fr/blog/ce-que-gpt-sait-vraiment-de-vous.html",
+                "datePublished": "2025-04-25T09:15:00.000Z"
+            }
+        ]
+    }
+    </script>
+</head>
+<body class="bg-slate-50/50 min-h-screen text-slate-800">
+    <header class="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <a href="../index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity no-underline">
+            <img src="../Logo Jeu de Prompts.png" alt="Logo" class="h-10 w-auto">
+            <span class="font-black text-slate-900 text-lg tracking-tighter">JEU DE <span class="text-indigo-600">PROMPTS</span></span>
+        </a>
+        <a href="../index.html" class="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors no-underline">Retour au site</a>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Blog</h1>
+            <p class="text-sm text-slate-500 mt-2">Articles, tutoriels et retours d'exp&eacute;rience sur l'IA pour formateurs</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <a href="cest-ouvert-pour-de-vrai.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!zyhB!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F94847d3d-0f7f-415d-b18b-a61ae0d7355b_2816x1536.png" alt="C’est ouvert ! Pour de vrai ! 🎉" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">27 mars 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">C’est ouvert ! Pour de vrai ! 🎉</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">25 fiches vous attendent d&amp;#233;j&amp;#224;. Et une offre de lancement qui ne durera pas.</p>
+                    </div>
+                </a>
+
+                <a href="jeudepromptsfr-est-la-vendredi-27.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!hqrQ!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F4185cdc5-1ee4-4539-8c83-7ded4827b899_1294x1034.png" alt="JeudePrompts.fr est là. Vendredi 27 mars, c'est officiel. 🎉" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">20 mars 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">JeudePrompts.fr est là. Vendredi 27 mars, c'est officiel. 🎉</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Ce site, je le construis pour vous. Pour nous. Pour tous les formateurs ind&amp;#233;pendants qui avancent seuls.</p>
+                    </div>
+                </a>
+
+                <a href="lia-au-service-des-formateurs-independants.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!RY98!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fa056020b-6503-48f4-866e-10f1176cc7b2_1920x1080.jpeg" alt="L'IA au service des formateurs indépendants ! 🚀" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">13 mars 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">L'IA au service des formateurs indépendants ! 🚀</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Un nouveau chapitre pour Jeu de Prompts</p>
+                    </div>
+                </a>
+
+                <a href="jai-code-une-vraie-appli-grace-a.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!NWwa!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F20543af3-8b0d-471a-94eb-7b639261ca82_1920x1080.jpeg" alt="J’ai codé une vraie appli grâce à l’IA. Pas du bricolage. Une vraie appli ! 🛠️🤯" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">25 février 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">J’ai codé une vraie appli grâce à l’IA. Pas du bricolage. Une vraie appli ! 🛠️🤯</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Et elle va peut-&amp;#234;tre vous sauver la mise si vous avez une cha&amp;#238;ne YouTube.</p>
+                    </div>
+                </a>
+
+                <a href="creer-des-chansons-pedagogiques-pour.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!NRla!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc3aeae53-f8a5-467f-b918-962ded93cdb6_2816x1536.png" alt="Créer des chansons pédagogiques pour l’apprentissage des langues" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">13 février 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Créer des chansons pédagogiques pour l’apprentissage des langues</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Plus besoin d&amp;#8217;&amp;#234;tre technicien ou musicien pour obtenir des r&amp;#233;sultats convaincants !</p>
+                    </div>
+                </a>
+
+                <a href="comment-jai-prompte-mon-propre-trello.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!sRwl!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F729bce2c-e901-4c79-b6a2-2d82ee2be8d9_2048x2048.png" alt="Comment j’ai “prompté” mon propre Trello" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">6 février 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Comment j’ai “prompté” mon propre Trello</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Vous r&amp;#234;vez d'un outil sur mesure et gratuit ? Vous allez aimer cet article !</p>
+                    </div>
+                </a>
+
+                <a href="workflow-de-realisation-de-videos.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!gUWz!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F8bc3b327-a204-402c-81cf-d4648f442131_974x898.jpeg" alt="Workflow de réalisation de vidéos IA sans frais" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">30 janvier 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Workflow de réalisation de vidéos IA sans frais</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Pr&amp;#233;sent&amp;#233; par Marc ASSI &amp;#8212; Jeu de Prompts</p>
+                    </div>
+                </a>
+
+                <a href="negocier-100k-avec-lia.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!wA8_!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fc802aff9-8f20-4c9f-a98c-529ea50c4c65_1536x1024.png" alt="🔺Négocier 100k€ avec l’IA" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">23 janvier 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">🔺Négocier 100k€ avec l’IA</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Comment j&amp;#8217;ai d&amp;#233;cod&amp;#233; une offre complexe en 3 &amp;#233;tapes</p>
+                    </div>
+                </a>
+
+                <a href="ia-et-ecole-le-guide-2026.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!996I!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F2692e157-764a-4530-bbba-b76b84df2ac8_1920x1080.png" alt="IA et Ecole : le guide 2026 🏫" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">16 janvier 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">IA et Ecole : le guide 2026 🏫</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Une formation propos&amp;#233;e par Marc - Jeu de Prompts</p>
+                    </div>
+                </a>
+
+                <a href="lia-est-votre-nouveau-directeur-marketing.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!ENEN!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F72b63a6f-2faa-436d-91ac-e495c2ee47b0_2048x1778.png" alt="L'IA est votre nouveau Directeur Marketing" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">9 janvier 2026</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">L'IA est votre nouveau Directeur Marketing</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Pourquoi avoir la meilleure &quot;pizza&quot; ne suffit plus et comment l'intelligence artificielle devient votre bras droit en communication</p>
+                    </div>
+                </a>
+
+                <a href="2026-sans-brouillard-transformez.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!YXEe!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F4cf4ca12-d91a-4001-8fe7-425ad402b48a_1920x1080.jpeg" alt="2026 sans brouillard : transformez vos souvenirs de 2025 en plan de bataille avec l'IA" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">26 décembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">2026 sans brouillard : transformez vos souvenirs de 2025 en plan de bataille avec l'IA</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Deux m&amp;#233;thodes concr&amp;#232;tes et deux prompts &quot;Raviolis Chauds&quot; pour clore l'ann&amp;#233;e avec brio et renforcer votre r&amp;#233;seau.</p>
+                    </div>
+                </a>
+
+                <a href="gpt-52-contre-gemini-3-on-cloture.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!cyZe!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F8fd80e5d-902e-4360-9510-598fcd0ed75a_2240x1920.png" alt="GPT 5.2 contre Gemini 3 : On clôture le duel avec un cadeau pour vous !" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">19 décembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">GPT 5.2 contre Gemini 3 : On clôture le duel avec un cadeau pour vous !</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Les deux g&amp;#233;ants sont maintenant au coude &amp;#224; coude sur l'image et le code. Choisissez le th&amp;#232;me de notre futur atelier live pour…</p>
+                    </div>
+                </a>
+
+                <a href="gpt-51-vs-gemini-3-le-duel-final.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!ll9v!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ffd401d80-083c-45fb-9ed7-5eb1e6bdcfe3_2752x1536.png" alt="GPT 5.1 vs Gemini 3 : Le Duel Final (Partie 3) - Le Choc du Code" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">12 décembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">GPT 5.1 vs Gemini 3 : Le Duel Final (Partie 3) - Le Choc du Code</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">La cloche sonne ! Le dernier round.</p>
+                    </div>
+                </a>
+
+                <a href="gpt-51-vs-gemini-3-le-duel-des-images.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!931f!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fd4bbbe85-9d4a-48e0-811a-77bbaf3c662c_2528x1696.png" alt="GPT-5.1 vs Gemini 3 : le duel des images" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">5 décembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">GPT-5.1 vs Gemini 3 : le duel des images</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Spoiler : il y a un KO technique</p>
+                    </div>
+                </a>
+
+                <a href="je-compare-gpt-51-avec-gemini-3-partie.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!YdU-!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F334ab6df-6f21-4c52-99df-bf061a12435a_1280x720.jpeg" alt="Je compare GPT 5.1 avec GEMINI 3 [Partie 1/3]" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">28 novembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Je compare GPT 5.1 avec GEMINI 3 [Partie 1/3]</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Comment les deux mod&amp;#232;les r&amp;#233;agissent face &amp;#224; une demande d&amp;#8217;assistance pr&amp;#233;cise ? &amp;#127928;</p>
+                    </div>
+                </a>
+
+                <a href="marre-du-sensationnalisme-autour.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!yE2Z!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe172df73-efc8-4d68-8b27-94fa8acd05ff_1024x1536.png" alt="Marre du sensationnalisme autour de l'IA !" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">26 septembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Marre du sensationnalisme autour de l'IA !</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">IA et &amp;#233;nergie : remettre les chiffres en perspective</p>
+                    </div>
+                </a>
+
+                <a href="comment-limiter-vraiment-les-hallucinations.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!R3u_!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F52a3135a-e03d-49b9-86d8-3b3994366bf9_1536x1024.png" alt="Comment limiter (vraiment) les hallucinations de ChatGPT ? 🤯🤖" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">19 septembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Comment limiter (vraiment) les hallucinations de ChatGPT ? 🤯🤖</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Les hallucinations des IA g&amp;#233;n&amp;#233;ratives : LE sujet du moment.</p>
+                    </div>
+                </a>
+
+                <a href="creer-son-crm-leger-avec-gpt5.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!qbSz!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F7723d986-adcf-45b6-bb50-46cb9515a3c4_1536x1024.png" alt="Créer son CRM léger avec GPT5" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">5 septembre 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Créer son CRM léger avec GPT5</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Comment j'fais si j'y connais rien ???</p>
+                    </div>
+                </a>
+
+                <a href="et-si-on-arretait-daccuser-lia-de.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!J4IV!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F1917a7b4-5582-4715-83f4-c0967dbdcab8_1024x1536.png" alt="Et si on arrêtait d’accuser l’IA de tous les maux ?" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">27 juin 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Et si on arrêtait d’accuser l’IA de tous les maux ?</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">&amp;#128167;Non, ce n'est pas l'IA qui va provoquer l'ass&amp;#232;chement des oc&amp;#233;ans...</p>
+                    </div>
+                </a>
+
+                <a href="ce-que-gpt-sait-vraiment-de-vous.html" class="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all no-underline">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="https://substackcdn.com/image/fetch/$s_!ZOUY!,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Ff5e4192f-d9ec-447c-8f7c-f196bbd81d7a_1024x1024.png" alt="Ce que GPT sait (vraiment) de vous et comment garder le contrôle" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                    <div class="p-5">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">25 avril 2025</p>
+                        <h2 class="text-lg font-black text-slate-900 tracking-tight leading-snug mb-2 group-hover:text-indigo-600 transition-colors">Ce que GPT sait (vraiment) de vous et comment garder le contrôle</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed">Un point complet &amp;#224; avril 2025 sur la m&amp;#233;moire de GPT-4 et au-del&amp;#224;</p>
+                    </div>
+                </a>
+        </div>
+    </main>
+
+    <footer class="py-8 text-center border-t border-slate-100 mt-12">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">&copy; 2026 Jeu de Prompts, Marc ASSI</p>
+    </footer>
+</body>
+</html>
