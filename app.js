@@ -503,7 +503,16 @@ async function fetchLinks() {
 }
 
 // --- PRIORITY NAV (overflow → "..." dropdown, ULIB pattern) ---
-function setupPriorityNav() {
+var _priorityNavReady = false;
+var _priorityNavUpdate = null;
+
+function updatePriorityNav() {
+    if (_priorityNavUpdate) {
+        // Already set up — just re-run the measurement
+        _priorityNavUpdate();
+        return;
+    }
+
     var container = document.getElementById('priorityNav');
     var visible = document.getElementById('category-nav');
     var moreBtn = document.getElementById('priorityMoreBtn');
@@ -512,19 +521,18 @@ function setupPriorityNav() {
 
     var dropdownOpen = false;
 
-    function updateNav() {
+    function doUpdate() {
+        if (dropdownOpen) return; // Don't re-run while dropdown is open
+
         var items = visible.querySelectorAll('[data-priority-item]');
         var separators = visible.querySelectorAll('.nav-separator');
 
-        // Reset: show everything
         for (var i = 0; i < items.length; i++) items[i].style.display = '';
         for (var s = 0; s < separators.length; s++) separators[s].style.display = '';
         moreBtn.classList.add('hidden');
         dropdown.innerHTML = '';
-        dropdownOpen = false;
         dropdown.classList.add('hidden');
 
-        // Measure without overflow clipping
         visible.style.overflow = 'visible';
         visible.style.flexShrink = '0';
         void visible.offsetWidth;
@@ -535,11 +543,9 @@ function setupPriorityNav() {
         if (visible.scrollWidth <= availW) {
             visible.style.overflow = '';
             visible.style.flexShrink = '';
-            console.log('[PriorityNav] All fits, no overflow');
             return;
         }
 
-        // Hide items from end until it fits
         var moreBtnW = 44;
         while (visible.scrollWidth > availW - moreBtnW) {
             var found = false;
@@ -557,7 +563,6 @@ function setupPriorityNav() {
         visible.style.overflow = '';
         visible.style.flexShrink = '';
 
-        // Hide orphaned separators
         for (var s2 = 0; s2 < separators.length; s2++) {
             var prev = separators[s2].previousElementSibling;
             var next = separators[s2].nextElementSibling;
@@ -577,38 +582,34 @@ function setupPriorityNav() {
                 clone.className = 'block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600';
                 dropdown.appendChild(clone);
             }
-            console.log('[PriorityNav] Overflow: ' + overflowing.length + ' items hidden, dropdown children: ' + dropdown.children.length);
         }
     }
 
-    // Toggle dropdown (exact ULIB pattern)
+    // Store reference for future calls
+    _priorityNavUpdate = doUpdate;
+
+    // Set up event listeners ONCE
     moreBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         dropdownOpen = !dropdownOpen;
         dropdown.classList.toggle('hidden', !dropdownOpen);
     });
-    document.addEventListener('click', function() {
-        dropdownOpen = false;
-        dropdown.classList.add('hidden');
+
+    document.addEventListener('click', function(e) {
+        if (!moreBtn.contains(e.target)) {
+            dropdownOpen = false;
+            dropdown.classList.add('hidden');
+        }
     });
 
-    // Run now + on resize (debounced to avoid toggle-triggered re-runs)
     var resizeTimer = null;
-    updateNav();
     window.addEventListener('resize', function() {
-        if (dropdownOpen) return; // Don't re-run while dropdown is open
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(updateNav, 150);
+        resizeTimer = setTimeout(doUpdate, 150);
     });
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(function() {
-            setTimeout(updateNav, 100);
-        });
-    }
-}
 
-function updatePriorityNav() {
-    setupPriorityNav();
+    // First run
+    doUpdate();
 }
 
 // --- RENDERING ---
