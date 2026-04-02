@@ -502,9 +502,6 @@ async function fetchLinks() {
     if (!error) state.links = data || [];
 }
 
-function updatePriorityNav() {
-    // No-op: scroll nav handles overflow via CSS
-}
 
 // --- RENDERING ---
 async function renderNav() {
@@ -549,9 +546,6 @@ async function renderNav() {
             bg-slate-100 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 hover:shadow-sm">
             💬 Marc ${unreadBadge}
         </button>`;
-
-    // Priority Nav: overflow detection & "..." dropdown
-    updatePriorityNav();
 
     // Mobile hamburger menu content
     const mobileMenuPanel = document.getElementById('mobile-menu-panel');
