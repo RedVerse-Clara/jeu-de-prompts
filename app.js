@@ -565,13 +565,14 @@ function updatePriorityNav() {
 
     if (overflowing.length > 0) {
         moreBtn.classList.remove('hidden');
+        var dropdownHtml = '';
         for (var m = 0; m < overflowing.length; m++) {
-            var clone = overflowing[m].cloneNode(true);
-            clone.removeAttribute('data-priority-item');
-            clone.style.display = '';
-            clone.className = 'block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600';
-            dropdown.appendChild(clone);
+            var el = overflowing[m];
+            var text = el.textContent.trim();
+            var onclick = el.getAttribute('onclick') || '';
+            dropdownHtml += '<button onclick="' + onclick + '" class="block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600">' + text + '</button>';
         }
+        dropdown.innerHTML = dropdownHtml;
     }
 }
 
