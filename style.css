@@ -296,13 +296,27 @@ body {
     -ms-overflow-style: none; /* IE */
 }
 
-/* Hide scrollbar but keep scroll functional */
+/* Styled horizontal scrollbar for nav */
 .nav-scroll::-webkit-scrollbar {
-    height: 0px;
+    height: 4px;
+}
+
+.nav-scroll::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 10px;
+}
+
+.nav-scroll::-webkit-scrollbar-thumb:hover {
+    background: #818cf8;
+}
+
+.nav-scroll::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .nav-scroll {
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #c7d2fe transparent;
     mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
 }
