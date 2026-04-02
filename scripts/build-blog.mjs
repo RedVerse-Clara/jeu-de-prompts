@@ -1,10 +1,10 @@
 /**
  * build-blog.mjs
- * Fetches Substack RSS feed and generates static HTML blog pages.
+ * Fetches all Substack articles via API and generates static HTML blog pages.
  * Zero dependencies — requires Node 20+ (native fetch).
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,52 +13,38 @@ const ROOT = join(__dirname, '..');
 const BLOG_DIR = join(ROOT, 'blog');
 
 const SITE_URL = 'https://jeudeprompts.fr';
-const SUBSTACK_FEED = 'https://jeudeprompts.substack.com/feed';
+const SUBSTACK_API = 'https://jeudeprompts.substack.com/api/v1/posts';
 const FALLBACK_IMAGE = `${SITE_URL}/Marc.png`;
 
-// ── Fetch & Parse RSS ──────────────────────────────────────────────
+// ── Fetch all posts via Substack API ───────────────────────────────
 
-async function fetchFeed() {
-    const res = await fetch(SUBSTACK_FEED);
-    if (!res.ok) throw new Error(`RSS fetch failed: ${res.status}`);
-    return res.text();
-}
+async function fetchAllPosts() {
+    const all = [];
+    let offset = 0;
+    const limit = 50;
 
-function extractTag(xml, tag) {
-    const m = xml.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>`, 'i'))
-        || xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i'));
-    return m ? m[1].trim() : '';
-}
-
-function extractEnclosure(xml) {
-    const m = xml.match(/<enclosure[^>]+url="([^"]+)"/i);
-    return m ? m[1] : '';
-}
-
-function slugFromLink(link) {
-    // Substack URLs: https://jeudeprompts.substack.com/p/slug-here
-    const m = link.match(/\/p\/([^/?#]+)/);
-    return m ? m[1] : link.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-}
-
-function parseItems(xml) {
-    const items = [];
-    const parts = xml.split('<item>').slice(1);
-    for (const part of parts) {
-        const chunk = part.split('</item>')[0];
-        const title = extractTag(chunk, 'title');
-        const link = extractTag(chunk, 'link');
-        const pubDate = extractTag(chunk, 'pubDate');
-        const description = extractTag(chunk, 'description');
-        const content = extractTag(chunk, 'content:encoded');
-        const enclosure = extractEnclosure(chunk);
-        const slug = slugFromLink(link);
-
-        items.push({ title, link, pubDate, description, content, enclosure, slug });
+    while (true) {
+        const url = `${SUBSTACK_API}?limit=${limit}&offset=${offset}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`API fetch failed: ${res.status}`);
+        const posts = await res.json();
+        if (posts.length === 0) break;
+        all.push(...posts);
+        if (posts.length < limit) break;
+        offset += limit;
     }
+
     // Sort newest first
-    items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-    return items;
+    all.sort((a, b) => new Date(b.post_date) - new Date(a.post_date));
+
+    return all.map(post => ({
+        title: post.title || '',
+        slug: post.slug || '',
+        pubDate: post.post_date || '',
+        description: post.description || '',
+        content: post.body_html || '',
+        enclosure: post.cover_image || '',
+    }));
 }
 
 // ── Content Processing ─────────────────────────────────────────────
@@ -93,11 +79,31 @@ function truncate(str, len) {
 
 // ── HTML Templates ─────────────────────────────────────────────────
 
-function articlePage(item) {
+function articlePage(item, prev, next) {
     const image = item.enclosure || FALLBACK_IMAGE;
     const desc = escapeHtml(truncate(item.description || item.content, 160));
     const titleEsc = escapeHtml(item.title);
     const contentHtml = processContent(item.content);
+
+    const prevLink = prev
+        ? `<a href="${prev.slug}.html" class="flex-1 group flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all no-underline">
+                <span class="text-xl text-slate-300 group-hover:text-indigo-500 transition-colors">&larr;</span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pr&eacute;c&eacute;dent</p>
+                    <p class="text-sm font-bold text-slate-700 group-hover:text-indigo-600 transition-colors truncate">${escapeHtml(prev.title)}</p>
+                </div>
+            </a>`
+        : '<div class="flex-1"></div>';
+
+    const nextLink = next
+        ? `<a href="${next.slug}.html" class="flex-1 group flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md transition-all no-underline text-right">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Suivant</p>
+                    <p class="text-sm font-bold text-slate-700 group-hover:text-indigo-600 transition-colors truncate">${escapeHtml(next.title)}</p>
+                </div>
+                <span class="text-xl text-slate-300 group-hover:text-indigo-500 transition-colors">&rarr;</span>
+            </a>`
+        : '<div class="flex-1"></div>';
 
     return `<!DOCTYPE html>
 <html lang="fr">
@@ -158,6 +164,17 @@ function articlePage(item) {
         }
     }
     </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "${SITE_URL}/" },
+            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "${SITE_URL}/blog/" },
+            { "@type": "ListItem", "position": 3, "name": "${titleEsc}" }
+        ]
+    }
+    </script>
 </head>
 <body class="bg-slate-50/50 min-h-screen text-slate-800">
     <header class="bg-white border-b px-6 py-4 flex items-center justify-between">
@@ -169,19 +186,36 @@ function articlePage(item) {
     </header>
 
     <main class="max-w-3xl mx-auto px-6 py-12">
+        <!-- Fil d'Ariane -->
+        <nav aria-label="Breadcrumb" class="mb-8 text-xs font-medium text-slate-400">
+            <ol class="flex items-center gap-1.5 flex-wrap">
+                <li><a href="../index.html" class="hover:text-indigo-600 transition-colors no-underline">Accueil</a></li>
+                <li class="select-none">/</li>
+                <li><a href="index.html" class="hover:text-indigo-600 transition-colors no-underline">Blog</a></li>
+                <li class="select-none">/</li>
+                <li class="text-slate-600 font-bold truncate max-w-[250px]">${item.title}</li>
+            </ol>
+        </nav>
+
         <article>
             <div class="mb-8">
                 <p class="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-2">${formatDate(item.pubDate)}</p>
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight leading-tight">${item.title}</h1>
                 <p class="text-sm text-slate-500 mt-3">Par Marc ASSI</p>
             </div>
-${item.enclosure ? `            <img src="${item.enclosure}" alt="${titleEsc}" class="w-full rounded-2xl mb-8 shadow-sm">\n` : ''}
+
             <div class="lesson-content">
                 ${contentHtml}
             </div>
         </article>
 
-        <div class="mt-12 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
+        <!-- Navigation Précédent / Suivant -->
+        <div class="flex gap-4 mt-12">
+            ${prevLink}
+            ${nextLink}
+        </div>
+
+        <div class="mt-8 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
             <p class="font-black text-slate-900 mb-1">Envie de recevoir les prochains articles ?</p>
             <p class="text-sm text-slate-500 mb-4">Rejoins la newsletter Jeu de Prompts</p>
             <a href="https://jeudeprompts.substack.com/" target="_blank" rel="noopener"
@@ -328,9 +362,8 @@ ${blogEntries}
 // ── Main ───────────────────────────────────────────────────────────
 
 async function main() {
-    console.log('Fetching Substack RSS feed…');
-    const xml = await fetchFeed();
-    const items = parseItems(xml);
+    console.log('Fetching Substack articles via API…');
+    const items = await fetchAllPosts();
     console.log(`Found ${items.length} articles.`);
 
     if (items.length === 0) {
@@ -341,12 +374,14 @@ async function main() {
     // Ensure blog directory exists
     if (!existsSync(BLOG_DIR)) mkdirSync(BLOG_DIR, { recursive: true });
 
-    // Generate article pages
-    for (const item of items) {
-        const html = articlePage(item);
-        const path = join(BLOG_DIR, `${item.slug}.html`);
+    // Generate article pages (with prev/next navigation)
+    for (let i = 0; i < items.length; i++) {
+        const prev = i > 0 ? items[i - 1] : null;
+        const next = i < items.length - 1 ? items[i + 1] : null;
+        const html = articlePage(items[i], prev, next);
+        const path = join(BLOG_DIR, `${items[i].slug}.html`);
         writeFileSync(path, html, 'utf-8');
-        console.log(`  → blog/${item.slug}.html`);
+        console.log(`  → blog/${items[i].slug}.html`);
     }
 
     // Generate index

@@ -290,9 +290,8 @@ body {
     }
 }
 
-/* Desktop nav: no scroll, shrink to fit */
+/* Desktop nav: no wrap, overflow handled by priority nav JS */
 #category-nav {
-    overflow: hidden;
     flex-wrap: nowrap;
 }
 

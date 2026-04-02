@@ -502,6 +502,102 @@ async function fetchLinks() {
     if (!error) state.links = data || [];
 }
 
+// --- PRIORITY NAV (overflow → "..." dropdown) ---
+function updatePriorityNav() {
+    var container = document.getElementById('priorityNav');
+    var visible = document.getElementById('category-nav');
+    var moreBtn = document.getElementById('priorityMoreBtn');
+    var dropdown = document.getElementById('priorityDropdown');
+    if (!container || !visible || !moreBtn || !dropdown) return;
+
+    var items = visible.querySelectorAll('[data-priority-item]');
+    var separators = visible.querySelectorAll('.nav-separator');
+
+    // Reset: show everything
+    for (var i = 0; i < items.length; i++) items[i].style.display = '';
+    for (var s = 0; s < separators.length; s++) separators[s].style.display = '';
+    moreBtn.classList.add('hidden');
+    dropdown.innerHTML = '';
+
+    // Measure without overflow clipping
+    visible.style.overflow = 'visible';
+    visible.style.flexShrink = '0';
+    void visible.offsetWidth;
+
+    var availW = container.offsetWidth;
+
+    // Does everything fit?
+    if (visible.scrollWidth <= availW) {
+        visible.style.overflow = '';
+        visible.style.flexShrink = '';
+        return;
+    }
+
+    // Overflow detected — hide items from the end until it fits
+    var moreBtnW = 44;
+    var overflowing = [];
+    while (visible.scrollWidth > availW - moreBtnW) {
+        var found = false;
+        for (var j = items.length - 1; j >= 0; j--) {
+            if (items[j].style.display !== 'none') {
+                items[j].style.display = 'none';
+                overflowing.unshift(items[j]);
+                found = true;
+                break;
+            }
+        }
+        if (!found) break;
+    }
+
+    visible.style.overflow = '';
+    visible.style.flexShrink = '';
+
+    // Hide orphaned separators
+    for (var s2 = 0; s2 < separators.length; s2++) {
+        var prev = separators[s2].previousElementSibling;
+        var next = separators[s2].nextElementSibling;
+        while (prev && prev.classList.contains('nav-separator')) prev = prev.previousElementSibling;
+        while (next && next.classList.contains('nav-separator')) next = next.nextElementSibling;
+        var prevHidden = !prev || prev.style.display === 'none';
+        var nextHidden = !next || next.style.display === 'none' || !next.hasAttribute('data-priority-item');
+        if (prevHidden || nextHidden) separators[s2].style.display = 'none';
+    }
+
+    if (overflowing.length > 0) {
+        moreBtn.classList.remove('hidden');
+        for (var m = 0; m < overflowing.length; m++) {
+            var clone = overflowing[m].cloneNode(true);
+            clone.removeAttribute('data-priority-item');
+            clone.style.display = '';
+            clone.className = 'block w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-indigo-50 hover:text-indigo-600';
+            dropdown.appendChild(clone);
+        }
+    }
+}
+
+// Toggle priority dropdown
+(function() {
+    var moreBtn = document.getElementById('priorityMoreBtn');
+    var dropdown = document.getElementById('priorityDropdown');
+    if (moreBtn && dropdown) {
+        var open = false;
+        moreBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            open = !open;
+            dropdown.classList.toggle('hidden', !open);
+        });
+        document.addEventListener('click', function() {
+            open = false;
+            dropdown.classList.add('hidden');
+        });
+    }
+})();
+
+window.addEventListener('resize', updatePriorityNav);
+if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(updatePriorityNav);
+}
+
 // --- RENDERING ---
 async function renderNav() {
     // Check unread messages
@@ -520,36 +616,39 @@ async function renderNav() {
         const name = escapeHtml(cat.name);
         const isActive = state.currentCategory === cat.slug;
         return `
-        <button onclick="window.app.loadCategory('${slug}')"
-            class="nav-btn-desktop flex-1 py-2 px-1 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap text-center transition-all
+        <button onclick="window.app.loadCategory('${slug}')" data-priority-item
+            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap text-center transition-all
             ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm'}">
             ${name}
         </button>`;
     }).join('');
 
     categoryNav.innerHTML = catButtons + `
-        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
-        <button onclick="window.app.openCommunity()"
+        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0 nav-separator"></div>
+        <button onclick="window.app.openCommunity()" data-priority-item
             class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:shadow-sm border border-emerald-100">
             🗣️ Communauté
         </button>
-        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
-        <button onclick="window.app.openFavorites()"
+        <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0 nav-separator"></div>
+        <button onclick="window.app.openFavorites()" data-priority-item
             class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600 hover:shadow-sm">
             ⭐ Favoris
         </button>
-        <button onclick="window.app.openAllNotes()"
+        <button onclick="window.app.openAllNotes()" data-priority-item
             class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:shadow-sm">
             📝 Notes
         </button>
-        <button onclick="window.app.openMessages()"
+        <button onclick="window.app.openMessages()" data-priority-item
             class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-slate-100 text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 hover:shadow-sm">
             💬 Marc ${unreadBadge}
         </button>`;
+
+    // Priority Nav: overflow detection & "..." dropdown
+    updatePriorityNav();
 
     // Mobile hamburger menu content
     const mobileMenuPanel = document.getElementById('mobile-menu-panel');
