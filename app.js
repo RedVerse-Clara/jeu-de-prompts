@@ -573,25 +573,20 @@ function updatePriorityNav() {
             dropdown.appendChild(clone);
         }
     }
+
+    // Attach click handler (replace to avoid duplicates)
+    var newBtn = moreBtn.cloneNode(true);
+    moreBtn.parentNode.replaceChild(newBtn, moreBtn);
+    newBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+    });
 }
 
-// Toggle priority dropdown
-(function() {
-    var moreBtn = document.getElementById('priorityMoreBtn');
-    var dropdown = document.getElementById('priorityDropdown');
-    if (moreBtn && dropdown) {
-        var open = false;
-        moreBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            open = !open;
-            dropdown.classList.toggle('hidden', !open);
-        });
-        document.addEventListener('click', function() {
-            open = false;
-            dropdown.classList.add('hidden');
-        });
-    }
-})();
+document.addEventListener('click', function() {
+    var dd = document.getElementById('priorityDropdown');
+    if (dd) dd.classList.add('hidden');
+});
 
 window.addEventListener('resize', updatePriorityNav);
 if (document.fonts && document.fonts.ready) {
