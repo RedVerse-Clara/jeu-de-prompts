@@ -2,7 +2,7 @@
  * Service Worker for Jeu de Prompts PWA
  * Cache-first for static assets, network-first for dynamic content.
  */
-const CACHE_NAME = 'jdp-cache-v4';
+const CACHE_NAME = 'jdp-cache-v5';
 const STATIC_ASSETS = [
     'style.css',
     'toc.js',
