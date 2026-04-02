@@ -270,6 +270,8 @@ function showPendingMessage() {
                     </a>
                 </div>
             </div>
+            <a href="https://billing.stripe.com/p/login/dRm6oG66Jerb1jI7791ZS00" target="_blank" class="text-xs text-indigo-400 hover:text-indigo-600 font-bold transition-colors underline no-underline">G&eacute;rer mon abonnement</a>
+            <span class="mx-2 text-slate-300">|</span>
             <button onclick="window.app.logoutFromPending()" class="text-xs text-slate-400 hover:text-slate-600 font-bold transition-colors">Se d&eacute;connecter</button>
         </div>
     `;
@@ -2802,7 +2804,8 @@ function openLegal(page) {
 
 const STRIPE_LINKS = {
     monthly: 'https://buy.stripe.com/5kQ3cu9iV0AlgeCezB1ZS0K',
-    yearly: 'https://buy.stripe.com/bJe3cu0MpbeZ3rQ6351ZS0L'
+    yearly: 'https://buy.stripe.com/bJe3cu0MpbeZ3rQ6351ZS0L',
+    portal: 'https://billing.stripe.com/p/login/dRm6oG66Jerb1jI7791ZS00'
 };
 
 function startPayment(plan) {
