@@ -586,18 +586,24 @@ function setupPriorityNav() {
         e.stopPropagation();
         dropdownOpen = !dropdownOpen;
         dropdown.classList.toggle('hidden', !dropdownOpen);
-        console.log('[PriorityNav] Toggle dropdown, open=' + dropdownOpen + ', children=' + dropdown.children.length);
     });
     document.addEventListener('click', function() {
         dropdownOpen = false;
         dropdown.classList.add('hidden');
     });
 
-    // Run now + on resize + on fonts ready
+    // Run now + on resize (debounced to avoid toggle-triggered re-runs)
+    var resizeTimer = null;
     updateNav();
-    window.addEventListener('resize', updateNav);
+    window.addEventListener('resize', function() {
+        if (dropdownOpen) return; // Don't re-run while dropdown is open
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(updateNav, 150);
+    });
     if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(updateNav);
+        document.fonts.ready.then(function() {
+            setTimeout(updateNav, 100);
+        });
     }
 }
 
