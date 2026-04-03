@@ -25,8 +25,10 @@ async function fetchAllPosts() {
 
     while (true) {
         const url = `${SUBSTACK_API}?limit=${limit}&offset=${offset}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`API fetch failed: ${res.status}`);
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'JeuDePrompts-BlogSync/1.0' }
+        });
+        if (!res.ok) throw new Error(`API fetch failed: ${res.status} ${res.statusText} for ${url}`);
         const posts = await res.json();
         if (posts.length === 0) break;
         all.push(...posts);

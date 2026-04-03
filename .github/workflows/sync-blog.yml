@@ -19,7 +19,12 @@ jobs:
           node-version: '20'
 
       - name: Build blog pages from Substack RSS
-        run: node scripts/build-blog.mjs
+        run: |
+          for i in 1 2 3; do
+            node scripts/build-blog.mjs && break
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Commit and push if changed
         run: |
