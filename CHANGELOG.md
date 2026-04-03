@@ -4,6 +4,14 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-04-03 — Correction sync blog Substack
+
+- Correction de la GitHub Action de synchronisation quotidienne du blog (ajout d'un User-Agent pour éviter le blocage par Substack)
+- Ajout d'un mécanisme de retry (3 tentatives) en cas d'échec réseau
+- Mise à jour des actions GitHub vers v5 et Node.js 22 (suppression du warning de dépréciation Node 20)
+
+---
+
 ## 2026-04-02 — Blog SEO, abonnement Stripe, navigation desktop
 
 ### Blog Substack
