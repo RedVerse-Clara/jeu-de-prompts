@@ -283,7 +283,17 @@
                 <div class="bg-white rounded-[2.5rem] shadow-sm border-2 border-indigo-200 p-8 lg:p-10 relative overflow-hidden">
                     <span class="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">Acc&egrave;s complet</span>
                     <h3 class="text-xl font-black text-slate-900 mb-2">JEU DE PROMPTS</h3>
-                    <p class="text-sm text-slate-500 font-medium mb-6">Tous les prompts, fiches, workflows et mises &agrave; jour. Messagerie directe avec Marc.</p>
+                    <p class="text-sm text-slate-500 font-medium mb-5">Tous les prompts, fiches, workflows et mises &agrave; jour. Messagerie directe avec Marc.</p>
+
+                    <!-- Promo lancement -->
+                    <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mb-6 text-center relative overflow-hidden">
+                        <div class="absolute -top-1 -left-1 w-20 h-20 bg-amber-400/10 rounded-full blur-xl"></div>
+                        <p class="text-xs font-black uppercase tracking-wide text-amber-700 mb-1">&#127881; Offre sp&eacute;ciale lancement</p>
+                        <p class="text-2xl font-black text-slate-900">-50<span class="text-base">%</span></p>
+                        <p class="text-xs text-slate-600 font-medium mt-1">jusqu'au 30 avril 2026 avec le code</p>
+                        <button onclick="navigator.clipboard.writeText('FORMATEUR');this.textContent='Copi\u00e9 !';setTimeout(()=>this.textContent='FORMATEUR',1500)" class="inline-block mt-2 bg-indigo-600 text-white font-black text-sm px-5 py-1.5 rounded-full tracking-widest cursor-pointer hover:bg-indigo-700 transition-colors">FORMATEUR</button>
+                        <p class="text-[10px] text-slate-400 mt-2">&#128203; Clique sur le code pour le copier</p>
+                    </div>
 
                     <div class="flex flex-col sm:flex-row gap-4 mb-6">
                         <button onclick="window.app.startPayment('monthly')"
@@ -310,6 +320,52 @@
                     </details>
 
                     <p class="text-[10px] text-slate-400 mt-4 text-center">Paiement s&eacute;curis&eacute; par Stripe. &mdash; <a href="https://billing.stripe.com/p/login/dRm6oG66Jerb1jI7791ZS00" target="_blank" class="text-indigo-400 hover:text-indigo-600 underline transition-colors">G&eacute;rer mon abonnement</a></p>
+                </div>
+            </div>
+
+            <!-- Témoignages -->
+            <div class="max-w-5xl mx-auto px-6 pb-16">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight mb-8 text-center">Ce qu'en disent les formateurs</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                        </div>
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed mb-4">&laquo;&nbsp;J'ai divis&eacute; par 3 mon temps de pr&eacute;paration de cours. Les prompts sont directement utilisables, pas besoin de les adapter pendant des heures.&nbsp;&raquo;</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-black text-sm">S</div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">Sophie L.</p>
+                                <p class="text-[11px] text-slate-400 font-medium">Formatrice en management</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                        </div>
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed mb-4">&laquo;&nbsp;La partie acquisition client m'a ouvert les yeux. En 2 mois, j'ai rempli mes sessions de juin sans passer un seul appel de prospection.&nbsp;&raquo;</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-black text-sm">K</div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">Karim D.</p>
+                                <p class="text-[11px] text-slate-400 font-medium">Formateur en d&eacute;veloppement web</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center gap-1 mb-3">
+                            <span class="text-amber-400 text-sm">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                        </div>
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed mb-4">&laquo;&nbsp;Je suis ind&eacute;pendante depuis 6 mois et je galérais &agrave; tout g&eacute;rer. Gr&acirc;ce aux workflows IA, j'ai enfin une organisation qui tient la route.&nbsp;&raquo;</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-black text-sm">C</div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">Claire M.</p>
+                                <p class="text-[11px] text-slate-400 font-medium">Formatrice en anglais professionnel</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
