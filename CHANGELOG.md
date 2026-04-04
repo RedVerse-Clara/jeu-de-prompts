@@ -4,6 +4,19 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-04-04 — Promo lancement et preuve sociale
+
+### Landing page
+- Ajout d'un bandeau promo « -50% jusqu'au 30 avril » avec le code FORMATEUR copiable au clic
+- Ajout d'une section témoignages avec 3 avis de formateurs (Sophie L., Karim D., Claire M.)
+
+### Fix cache CDN Substack
+
+- Correction du script de sync blog : ajout d'un cache-busting (timestamp + headers no-cache) pour forcer l'API Substack à renvoyer les derniers articles depuis les runners GitHub Actions
+- Synchronisation du nouvel article « Claude Max à 100€/mois : bonne idée pour un formateur indépendant ? »
+
+---
+
 ## 2026-04-03 — Correction sync blog Substack
 
 - Correction de la GitHub Action de synchronisation quotidienne du blog (ajout d'un User-Agent pour éviter le blocage par Substack)
