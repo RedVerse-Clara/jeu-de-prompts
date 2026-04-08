@@ -142,6 +142,23 @@ async function checkUser() {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+            // Check remember-me: if not remembered and no active session flag, sign out
+            const rememberMe = localStorage.getItem('remember_me');
+            const sessionActive = sessionStorage.getItem('session_active');
+            if (rememberMe !== 'true' && sessionActive !== 'true') {
+                await supabase.auth.signOut();
+                showAuth();
+                return;
+            }
+            // Check remember-me expiry (30 days)
+            const rememberExpiry = localStorage.getItem('remember_me_expiry');
+            if (rememberMe === 'true' && rememberExpiry && Date.now() > Number(rememberExpiry)) {
+                localStorage.removeItem('remember_me');
+                localStorage.removeItem('remember_me_expiry');
+                await supabase.auth.signOut();
+                showAuth();
+                return;
+            }
             state.user = user;
             await checkAdmin();
             showSite();
@@ -251,14 +268,15 @@ function showPendingMessage() {
     pending.innerHTML = `
         <div class="max-w-lg w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 text-center">
             <img src="Logo Jeu de Prompts.png" alt="Logo" class="h-16 mx-auto mb-4">
-            <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">&#9203;</div>
-            <h2 class="text-2xl font-black text-slate-900 mb-2">Compte en attente</h2>
+            <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">&#10024;</div>
+            <h2 class="text-2xl font-black text-slate-900 mb-2">Bienvenue !</h2>
             <p class="text-sm text-slate-500 font-medium mb-6 leading-relaxed">
-                Votre compte sera valid&eacute; dans les 24h.<br>
-                Si vous avez d&eacute;j&agrave; r&eacute;gl&eacute; votre abonnement, Marc vous contactera tr&egrave;s vite pour activer votre acc&egrave;s.
+                Votre compte a bien &eacute;t&eacute; cr&eacute;&eacute;.<br>
+                Pour acc&eacute;der &agrave; la plateforme, choisissez votre formule ci-dessous.<br>
+                Votre acc&egrave;s sera activ&eacute; dans les 24h apr&egrave;s paiement.
             </p>
             <div class="bg-slate-50 rounded-2xl p-5 mb-6 text-left">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pas encore abonn&eacute; ?</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Choisir ma formule</p>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <a href="https://buy.stripe.com/5kQ3cu9iV0AlgeCezB1ZS0K" target="_blank"
                         class="flex-1 bg-indigo-600 text-white text-center font-black py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition-all active:scale-[0.98] no-underline text-sm">
@@ -280,6 +298,9 @@ function showPendingMessage() {
 
 async function logoutFromPending() {
     await supabase.auth.signOut();
+    localStorage.removeItem('remember_me');
+    localStorage.removeItem('remember_me_expiry');
+    sessionStorage.removeItem('session_active');
     document.getElementById('pending-container')?.remove();
     state.user = null;
     state.isAdmin = false;
@@ -386,6 +407,16 @@ loginForm.addEventListener('submit', async (e) => {
         loginError.classList.remove('hidden');
     } else {
         loginError.classList.add('hidden');
+        // Remember-me session persistence
+        const rememberMe = document.getElementById('remember-me').checked;
+        if (rememberMe) {
+            localStorage.setItem('remember_me', 'true');
+            localStorage.setItem('remember_me_expiry', String(Date.now() + 30 * 24 * 60 * 60 * 1000));
+        } else {
+            localStorage.removeItem('remember_me');
+            localStorage.removeItem('remember_me_expiry');
+        }
+        sessionStorage.setItem('session_active', 'true');
         state.user = data.user;
         await checkAdmin();
         showSite();
@@ -424,20 +455,20 @@ registerForm.addEventListener('submit', async (e) => {
         loginError.classList.remove('hidden');
     } else {
         loginError.classList.add('hidden');
-        // Check if there was a payment intent
-        const paymentIntent = sessionStorage.getItem('payment_intent');
-        if (paymentIntent && STRIPE_LINKS[paymentIntent]) {
-            sessionStorage.removeItem('payment_intent');
-            // Update success message
-            document.getElementById('successMsg').textContent = 'Compte créé ! Vous allez être redirigé vers le paiement...';
-            document.getElementById('successPopup').classList.remove('hidden');
-            setTimeout(() => {
+        // Auto-login: Supabase returns a session on signUp
+        if (data.user) {
+            sessionStorage.setItem('session_active', 'true');
+            state.user = data.user;
+            await checkAdmin();
+            // Check if there was a payment intent — open Stripe in background
+            const paymentIntent = sessionStorage.getItem('payment_intent');
+            if (paymentIntent && STRIPE_LINKS[paymentIntent]) {
+                sessionStorage.removeItem('payment_intent');
                 window.open(STRIPE_LINKS[paymentIntent] + '?prefilled_email=' + encodeURIComponent(email), '_blank');
-            }, 2000);
-        } else {
-            document.getElementById('successPopup').classList.remove('hidden');
+            }
+            // Show site (will naturally show pending page for new users)
+            showSite();
         }
-        switchAuthTab('login');
     }
 });
 
@@ -445,6 +476,9 @@ registerForm.addEventListener('submit', async (e) => {
 logoutBtn.addEventListener('click', async () => {
     if (!confirm('Se déconnecter ?')) return;
     await supabase.auth.signOut();
+    localStorage.removeItem('remember_me');
+    localStorage.removeItem('remember_me_expiry');
+    sessionStorage.removeItem('session_active');
     state.user = null;
     state.isAdmin = false;
     siteContainer.classList.add('hidden');
