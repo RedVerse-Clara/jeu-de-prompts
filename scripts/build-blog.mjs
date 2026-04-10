@@ -4,7 +4,7 @@
  * Zero dependencies — requires Node 20+ (native fetch).
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -15,6 +15,8 @@ const BLOG_DIR = join(ROOT, 'blog');
 const SITE_URL = 'https://jeudeprompts.fr';
 const SUBSTACK_API = 'https://jeudeprompts.substack.com/api/v1/posts';
 const FALLBACK_IMAGE = `${SITE_URL}/Marc.png`;
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 15_000;
 
 // ── Fetch all posts via Substack API ───────────────────────────────
 
@@ -51,6 +53,32 @@ async function fetchAllPosts() {
         content: post.body_html || '',
         enclosure: post.cover_image || '',
     }));
+}
+
+function countExistingArticles() {
+    if (!existsSync(BLOG_DIR)) return 0;
+    return readdirSync(BLOG_DIR).filter(f => f.endsWith('.html') && f !== 'index.html').length;
+}
+
+async function fetchWithRetry() {
+    const existingCount = countExistingArticles();
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const items = await fetchAllPosts();
+
+        if (items.length >= existingCount) {
+            return items;
+        }
+
+        console.warn(`⚠ Attempt ${attempt}/${MAX_RETRIES}: API returned ${items.length} articles but ${existingCount} already exist locally (CDN stale cache). Retrying in ${RETRY_DELAY_MS / 1000}s…`);
+        if (attempt < MAX_RETRIES) {
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        }
+    }
+
+    // Last resort: return what we got, don't fail the build
+    console.warn('⚠ All retries exhausted — API still returns fewer articles than expected. Building with available data.');
+    return fetchAllPosts();
 }
 
 // ── Content Processing ─────────────────────────────────────────────
@@ -371,7 +399,7 @@ ${blogEntries}
 
 async function main() {
     console.log('Fetching Substack articles via API…');
-    const items = await fetchAllPosts();
+    const items = await fetchWithRetry();
     console.log(`Found ${items.length} articles.`);
 
     if (items.length === 0) {
