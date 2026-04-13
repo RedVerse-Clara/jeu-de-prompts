@@ -4,6 +4,24 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-04-13 — URLs partageables et SEO blog
+
+### Fiches
+- URLs partageables par fiche via hash routing (`#fiche=<id>-<slug>`) : chaque fiche a son propre lien copiable depuis la barre du navigateur
+- Mise à jour automatique du titre de l'onglet avec le titre de la fiche
+- Navigation back/forward du navigateur fonctionnelle entre fiches
+- Restauration de la fiche au chargement si l'URL contient un hash (pratique pour partager un lien à un abonné)
+
+### Blog — maillage interne SEO
+- Ajout d'un bloc « À lire aussi » en bas de chaque article (3 articles liés en plus de la navigation précédent/suivant)
+- Sélection déterministe des articles liés (offsets fixes) pour stabilité SEO
+
+### Authentification
+- Case à cocher « Rester connecté » (session 30 jours)
+- Simplification du parcours d'onboarding nouveaux utilisateurs
+
+---
+
 ## 2026-04-04 — Promo lancement et preuve sociale
 
 ### Landing page
