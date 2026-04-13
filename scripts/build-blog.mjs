@@ -113,7 +113,25 @@ function truncate(str, len) {
 
 // ── HTML Templates ─────────────────────────────────────────────────
 
-function articlePage(item, prev, next) {
+function pickRelated(items, currentIdx, count = 3) {
+    const n = items.length;
+    const picks = [];
+    const offsets = [3, 7, 11, 5, 9, 13, 17, 2, 19];
+    for (const off of offsets) {
+        if (picks.length >= count) break;
+        const idx = ((currentIdx + off) % n + n) % n;
+        if (idx !== currentIdx && idx !== currentIdx - 1 && idx !== currentIdx + 1 && !picks.includes(idx)) {
+            picks.push(idx);
+        }
+    }
+    // Fallback if not enough picks (very small corpus)
+    for (let i = 0; i < n && picks.length < count; i++) {
+        if (i !== currentIdx && !picks.includes(i)) picks.push(i);
+    }
+    return picks.map(i => items[i]);
+}
+
+function articlePage(item, prev, next, related) {
     const image = item.enclosure || FALLBACK_IMAGE;
     const desc = escapeHtml(truncate(item.description || item.content, 160));
     const titleEsc = escapeHtml(item.title);
@@ -249,6 +267,27 @@ function articlePage(item, prev, next) {
             ${prevLink}
             ${nextLink}
         </div>
+
+        <!-- À lire aussi -->
+        <section class="mt-12" aria-labelledby="related-heading">
+            <h2 id="related-heading" class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-4">&Agrave; lire aussi</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                ${(related || []).map(r => {
+                    const rImg = r.enclosure || FALLBACK_IMAGE;
+                    const rDesc = escapeHtml(truncate(r.description || r.content, 90));
+                    return `<a href="${r.slug}.html" class="group bg-white rounded-2xl border border-slate-100 overflow-hidden hover:border-indigo-200 hover:shadow-md transition-all no-underline flex flex-col">
+                    <div class="aspect-[16/9] overflow-hidden bg-slate-100">
+                        <img src="${rImg}" alt="${escapeHtml(r.title)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
+                    </div>
+                    <div class="p-4 flex-1">
+                        <p class="text-[9px] font-bold text-indigo-600 uppercase tracking-widest mb-1">${formatDate(r.pubDate)}</p>
+                        <h3 class="text-sm font-black text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors mb-1">${escapeHtml(r.title)}</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">${rDesc}</p>
+                    </div>
+                </a>`;
+                }).join('\n                ')}
+            </div>
+        </section>
 
         <div class="mt-8 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
             <p class="font-black text-slate-900 mb-1">Envie de recevoir les prochains articles ?</p>
@@ -414,7 +453,8 @@ async function main() {
     for (let i = 0; i < items.length; i++) {
         const prev = i > 0 ? items[i - 1] : null;
         const next = i < items.length - 1 ? items[i + 1] : null;
-        const html = articlePage(items[i], prev, next);
+        const related = pickRelated(items, i, 3);
+        const html = articlePage(items[i], prev, next, related);
         const path = join(BLOG_DIR, `${items[i].slug}.html`);
         writeFileSync(path, html, 'utf-8');
         console.log(`  → blog/${items[i].slug}.html`);
