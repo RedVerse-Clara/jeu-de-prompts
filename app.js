@@ -514,12 +514,28 @@ async function initData() {
         renderLinks();
 
         if (state.categories.length > 0) {
-            loadCategory(state.categories[0].slug);
+            const hashId = parseFicheHash();
+            if (hashId) {
+                const ok = await loadResourceFromAnywhere(hashId, { skipHashUpdate: true });
+                if (!ok) loadCategory(state.categories[0].slug);
+            } else {
+                loadCategory(state.categories[0].slug);
+            }
         }
     } catch (err) {
         console.error('Erreur initialisation données:', err);
     }
 }
+
+window.addEventListener('popstate', async () => {
+    const id = parseFicheHash();
+    if (id) {
+        await loadResourceFromAnywhere(id, { skipHashUpdate: true });
+    } else if (state.categories.length > 0) {
+        document.title = 'Jeu de Prompts';
+        await loadCategory(state.currentCategory || state.categories[0].slug, { keepHash: true });
+    }
+});
 
 async function fetchCategories() {
     const { data, error } = await supabase.from('categories').select('*').order('position');
@@ -780,9 +796,10 @@ function openMobileLinks() {
     document.body.style.overflow = 'hidden';
 }
 
-async function loadCategory(slug) {
+async function loadCategory(slug, opts = {}) {
     state.currentCategory = slug;
     state.activeResource = null;
+    if (!opts.keepHash) clearResourceUrl();
     clearSearch();
     renderNav();
     showLoading();
@@ -885,11 +902,43 @@ function processContent(html) {
     return c;
 }
 
-async function loadResource(id) {
+function slugify(s) {
+    return (s || '')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60);
+}
+
+function parseFicheHash() {
+    const m = (location.hash || '').match(/^#fiche=(\d+)/);
+    return m ? m[1] : null;
+}
+
+function updateUrlForResource(res, { push = true } = {}) {
+    if (!res) return;
+    const slug = slugify(res.title);
+    const hash = '#fiche=' + res.id + (slug ? '-' + slug : '');
+    if (push && location.hash !== hash) {
+        history.pushState({ ficheId: res.id }, '', hash);
+    }
+    document.title = (res.title ? res.title + ' — ' : '') + 'Jeu de Prompts';
+}
+
+function clearResourceUrl() {
+    if (location.hash) {
+        history.pushState(null, '', location.pathname + location.search);
+    }
+    document.title = 'Jeu de Prompts';
+}
+
+async function loadResource(id, opts = {}) {
     const res = state.resources.find(r => r.id == id);
     if (!res) return;
 
     state.activeResource = res;
+    updateUrlForResource(res, { push: !opts.skipHashUpdate });
     renderResourceList();
 
     emptyState.classList.add('hidden');
@@ -1308,14 +1357,15 @@ async function openFavorites() {
     resourceDisplay.innerHTML = html;
 }
 
-async function loadResourceFromAnywhere(id) {
+async function loadResourceFromAnywhere(id, opts = {}) {
     // Fetch the resource and its category, then load it
     const { data: res } = await supabase.from('resources').select('*, categories(slug)').eq('id', id).single();
-    if (!res) return;
+    if (!res) return false;
     if (res.categories?.slug) {
-        await loadCategory(res.categories.slug);
+        await loadCategory(res.categories.slug, { keepHash: true });
     }
-    await loadResource(id);
+    await loadResource(id, opts);
+    return true;
 }
 
 // --- ALL NOTES ---
