@@ -4,6 +4,14 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-04-28 — Sync blog Substack
+
+- Synchronisation du nouvel article « Ce que 10 ans dans la vente m'ont appris sur les objections 🛡️ (et comment y répondre grâce à l'IA) »
+- Mise à jour du maillage interne « À lire aussi » sur les articles concernés
+- Mise à jour du sitemap
+
+---
+
 ## 2026-04-13 — URLs partageables et SEO blog
 
 ### Fiches
