@@ -4,45 +4,29 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
-## 2026-06-19 — Correctif affichage de la modal Actualités
+## 2026-06-19 — Sync blog fiabilisé, correctifs actualités, fond unifié
 
-- **Cause racine identifiée** : le contenu des news (collé dans l'éditeur) contenait des **espaces insécables** (U+00A0, fine insécable U+202F, `&nbsp;`…). Ces espaces interdisent le retour à la ligne, d'où des lignes entières non coupées qui débordaient (ascenseur horizontal, puis texte tronqué à droite). Ils sont désormais remplacés par des espaces normaux au rendu de la modal
-- Retour à la ligne automatique **aux espaces uniquement** (jamais au milieu d'un mot) : `white-space: normal`, `overflow-wrap: break-word` (casse seulement un token type URL, pas un mot), `word-break: normal`, contenu aligné à gauche, `pre-wrap` pour le code, médias bornés à `max-width: 100%`, `overflow-x: hidden` en filet de sécurité — le tout scopé à `#allNewsModal` pour ne pas altérer le rendu justifié des fiches
-- Bump cache-busters `app.js?v=8`, `style.css?v=10`
-
----
-
-## 2026-06-19 — Fond bleuté unifié sur tout le site
-
-- Application du dégradé bleuté de la page d'accueil (`linear-gradient` indigo → violet → crème, identique à la newsletter Substack) à **l'ensemble du site** : auparavant seule la landing l'affichait, le reste (app connectée, console admin, blog, mentions légales) était sur fond gris plat
-- Dégradé porté par le `<body>` avec `background-attachment: fixed` (fond stable et uniforme au scroll) ; retrait des classes `bg-slate-50/50` qui le masquaient
-- Console admin passée de `bg-slate-50` à `gradient-hero`
-- Template blog mis à jour + 53 pages régénérées ; bump des cache-busters `style.css?v=7`
-
----
-
-## 2026-06-19 — Correctif publication des actualités + nettoyage landing
-
-### Actualités (correction)
-- **Correction du bug d'enregistrement des news** : le `<select>` catégorie, masqué en mode news mais conservant son attribut `required`, déclenchait la validation HTML5 du navigateur sur un champ requis vide et invisible. La soumission du formulaire était alors annulée silencieusement (aucune erreur, aucune publication). L'attribut `required` est désormais désactivé en mode news et réactivé en mode fiche
-- Bump du cache-buster `app.js?v=7`
-
-### Landing page
-- Suppression du bandeau promo « Offre spéciale lancement -50% / code FORMATEUR » (obsolète, échéance 30 avril 2026 dépassée)
-
----
-
-## 2026-06-19 — Fiabilisation du sync blog Substack
-
-### Synchronisation
+### Synchronisation blog Substack
 - Passage de la GitHub Action de sync de **1×/jour à toutes les heures** (`cron: 0 * * * *`) : un nouvel article publié sur Substack apparaît sur jeudeprompts.fr/blog en moins d'une heure, automatiquement
 - Ajout d'un garde `concurrency` pour éviter le chevauchement d'exécutions (cron + déclenchement manuel)
 - Ajout d'une **alerte automatique** : en cas d'échec du sync, une issue GitHub est ouverte (notification email), réutilisée si déjà ouverte pour ne pas spammer — aucun secret SMTP requis
 - Refonte du script `build-blog.mjs` : retry réseau propre par requête de pagination, suppression de la logique fragile de comparaison de compteurs (qui pouvait boucler 45 s). Le script échoue désormais explicitement si l'API renvoie 0 article (déclenche l'alerte) plutôt que d'écraser le blog existant
 - Import d'un nouvel article non encore synchronisé
 
+### Actualités (corrections)
+- **Correction du bug d'enregistrement des news** : le `<select>` catégorie, masqué en mode news mais conservant son attribut `required`, déclenchait la validation HTML5 du navigateur sur un champ requis vide et invisible. La soumission du formulaire était alors annulée silencieusement (aucune erreur, aucune publication). L'attribut `required` est désormais désactivé en mode news et réactivé en mode fiche
+- **Correction de l'affichage de la modal « Toutes les actualités »** : le contenu collé contenait des **espaces insécables** (U+00A0, fine insécable U+202F, `&nbsp;`…) qui interdisent le retour à la ligne — d'où des lignes débordantes (ascenseur horizontal puis texte tronqué). Ils sont désormais remplacés par des espaces normaux au rendu. Wrapping aux espaces uniquement (`white-space: normal`, `overflow-wrap: break-word`, `word-break: normal`), contenu aligné à gauche, médias bornés à `max-width: 100%`, `overflow-x: hidden` en filet — scopé à `#allNewsModal`
+
+### Design — fond bleuté unifié
+- Application du dégradé bleuté de la page d'accueil (`linear-gradient` indigo → violet → crème, identique à la newsletter Substack) à **l'ensemble du site** : app connectée, console admin, blog et mentions légales étaient auparavant sur fond gris plat
+- Dégradé porté par le `<body>` avec `background-attachment: fixed` (fond stable au scroll) ; retrait des classes `bg-slate-50/50` qui le masquaient ; console admin passée de `bg-slate-50` à `gradient-hero` ; template blog mis à jour + 53 pages régénérées
+
 ### Landing page
+- Suppression du bandeau promo « Offre spéciale lancement -50% / code FORMATEUR » (obsolète, échéance 30 avril 2026 dépassée)
 - Suppression de la carte sociale Instagram (lien obsolète) ; la grille passe à 2 colonnes (Blog + Substack)
+
+### Technique
+- Cache-busters portés à `app.js?v=8`, `style.css?v=10`
 
 ---
 
