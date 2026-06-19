@@ -4,6 +4,17 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-06-19 — Correctif publication des actualités + nettoyage landing
+
+### Actualités (correction)
+- **Correction du bug d'enregistrement des news** : le `<select>` catégorie, masqué en mode news mais conservant son attribut `required`, déclenchait la validation HTML5 du navigateur sur un champ requis vide et invisible. La soumission du formulaire était alors annulée silencieusement (aucune erreur, aucune publication). L'attribut `required` est désormais désactivé en mode news et réactivé en mode fiche
+- Bump du cache-buster `app.js?v=7`
+
+### Landing page
+- Suppression du bandeau promo « Offre spéciale lancement -50% / code FORMATEUR » (obsolète, échéance 30 avril 2026 dépassée)
+
+---
+
 ## 2026-06-19 — Fiabilisation du sync blog Substack
 
 ### Synchronisation

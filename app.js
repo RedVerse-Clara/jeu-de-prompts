@@ -1509,6 +1509,8 @@ async function changePassword(e) {
 function openEditor(id = null) {
     document.getElementById('edit-mode').value = 'resource';
     document.getElementById('edit-category-wrapper').classList.remove('hidden');
+    // La catégorie est obligatoire pour une fiche
+    document.getElementById('edit-category').required = true;
 
     const res = id ? state.resources.find(r => r.id == id) : null;
     const data = res || { id: '', title: '', content: '' };
@@ -1535,6 +1537,9 @@ function openEditor(id = null) {
 async function openNewsEditor(id = null) {
     document.getElementById('edit-mode').value = 'news';
     document.getElementById('edit-category-wrapper').classList.add('hidden');
+    // Une news n'a pas de catégorie : on retire la contrainte "required" du select
+    // masqué, sinon la validation HTML5 bloque silencieusement l'envoi du formulaire.
+    document.getElementById('edit-category').required = false;
 
     let data = { id: '', title: '', content: '' };
     if (id) {
