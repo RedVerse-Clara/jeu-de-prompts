@@ -4,7 +4,7 @@
  * Zero dependencies — requires Node 20+ (native fetch).
  */
 
-import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -20,22 +20,41 @@ const RETRY_DELAY_MS = 15_000;
 
 // ── Fetch all posts via Substack API ───────────────────────────────
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Single page fetch with retry on transient network / CDN errors.
+async function fetchPage(offset, limit) {
+    let lastErr;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const url = `${SUBSTACK_API}?limit=${limit}&offset=${offset}&_t=${Date.now()}`;
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    'User-Agent': 'JeuDePrompts-BlogSync/1.0',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+            const posts = await res.json();
+            if (!Array.isArray(posts)) throw new Error('API did not return an array');
+            return posts;
+        } catch (err) {
+            lastErr = err;
+            console.warn(`⚠ Fetch offset=${offset} attempt ${attempt}/${MAX_RETRIES} failed: ${err.message}`);
+            if (attempt < MAX_RETRIES) await sleep(RETRY_DELAY_MS);
+        }
+    }
+    throw new Error(`API fetch failed at offset=${offset} after ${MAX_RETRIES} attempts: ${lastErr.message}`);
+}
+
 async function fetchAllPosts() {
     const all = [];
     let offset = 0;
     const limit = 50;
 
     while (true) {
-        const url = `${SUBSTACK_API}?limit=${limit}&offset=${offset}&_t=${Date.now()}`;
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': 'JeuDePrompts-BlogSync/1.0',
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-            }
-        });
-        if (!res.ok) throw new Error(`API fetch failed: ${res.status} ${res.statusText} for ${url}`);
-        const posts = await res.json();
+        const posts = await fetchPage(offset, limit);
         if (posts.length === 0) break;
         all.push(...posts);
         if (posts.length < limit) break;
@@ -53,32 +72,6 @@ async function fetchAllPosts() {
         content: post.body_html || '',
         enclosure: post.cover_image || '',
     }));
-}
-
-function countExistingArticles() {
-    if (!existsSync(BLOG_DIR)) return 0;
-    return readdirSync(BLOG_DIR).filter(f => f.endsWith('.html') && f !== 'index.html').length;
-}
-
-async function fetchWithRetry() {
-    const existingCount = countExistingArticles();
-
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        const items = await fetchAllPosts();
-
-        if (items.length >= existingCount) {
-            return items;
-        }
-
-        console.warn(`⚠ Attempt ${attempt}/${MAX_RETRIES}: API returned ${items.length} articles but ${existingCount} already exist locally (CDN stale cache). Retrying in ${RETRY_DELAY_MS / 1000}s…`);
-        if (attempt < MAX_RETRIES) {
-            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
-        }
-    }
-
-    // Last resort: return what we got, don't fail the build
-    console.warn('⚠ All retries exhausted — API still returns fewer articles than expected. Building with available data.');
-    return fetchAllPosts();
 }
 
 // ── Content Processing ─────────────────────────────────────────────
@@ -438,12 +431,14 @@ ${blogEntries}
 
 async function main() {
     console.log('Fetching Substack articles via API…');
-    const items = await fetchWithRetry();
+    const items = await fetchAllPosts();
     console.log(`Found ${items.length} articles.`);
 
+    // Safety: an empty response means the API is down/blocked. Skip rather than
+    // wipe the existing blog. We never delete pages, so a partial response just
+    // delays new articles to the next hourly run — no data loss.
     if (items.length === 0) {
-        console.log('No articles found, skipping generation.');
-        return;
+        throw new Error('API returned 0 articles — aborting to avoid clobbering existing blog.');
     }
 
     // Ensure blog directory exists

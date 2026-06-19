@@ -4,6 +4,20 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-06-19 — Fiabilisation du sync blog Substack
+
+### Synchronisation
+- Passage de la GitHub Action de sync de **1×/jour à toutes les heures** (`cron: 0 * * * *`) : un nouvel article publié sur Substack apparaît sur jeudeprompts.fr/blog en moins d'une heure, automatiquement
+- Ajout d'un garde `concurrency` pour éviter le chevauchement d'exécutions (cron + déclenchement manuel)
+- Ajout d'une **alerte automatique** : en cas d'échec du sync, une issue GitHub est ouverte (notification email), réutilisée si déjà ouverte pour ne pas spammer — aucun secret SMTP requis
+- Refonte du script `build-blog.mjs` : retry réseau propre par requête de pagination, suppression de la logique fragile de comparaison de compteurs (qui pouvait boucler 45 s). Le script échoue désormais explicitement si l'API renvoie 0 article (déclenche l'alerte) plutôt que d'écraser le blog existant
+- Import d'un nouvel article non encore synchronisé
+
+### Landing page
+- Suppression de la carte sociale Instagram (lien obsolète) ; la grille passe à 2 colonnes (Blog + Substack)
+
+---
+
 ## 2026-04-28 — Sync blog Substack
 
 - Synchronisation du nouvel article « Ce que 10 ans dans la vente m'ont appris sur les objections 🛡️ (et comment y répondre grâce à l'IA) »
