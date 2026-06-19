@@ -368,8 +368,8 @@ body {
 #allNewsModal .lesson-content * {
     max-width: 100%;
     white-space: normal;         /* annule un éventuel nowrap → retour à la ligne */
-    overflow-wrap: normal;       /* ne coupe jamais un mot */
-    word-break: normal;
+    overflow-wrap: break-word;   /* casse seulement un token trop long (URL), jamais un mot normal */
+    word-break: normal;          /* ne coupe pas au milieu des mots */
     hyphens: none;
 }
 #allNewsModal .lesson-content pre {

@@ -1,4 +1,4 @@
-
+﻿
 // app.js - Core Logic for Jeu de Prompts
 const SUPABASE_URL = 'https://nywwmhmymusbnapblwoj.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55d3dtaG15bXVzYm5hcGJsd29qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNDI2NzQsImV4cCI6MjA4NjkxODY3NH0.ad0KsZpGJUW_CF7k2dxxohX19CJ_ZnZMAOLaLchTCto';
@@ -684,6 +684,9 @@ async function openAllNews() {
         const date = new Date(n.created_at);
         const isRecent = (now - date.getTime()) < 7 * 86400 * 1000;
         const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        // Remplace les espaces insécables (U+00A0 / &nbsp;) par des espaces normaux :
+        // sinon le navigateur ne peut pas revenir à la ligne entre les mots.
+        const content = (n.content || '').replace(/[   ⁠]|&nbsp;|&#160;/g, ' ');
         return `
         <div class="separator pb-4 mb-4">
             <div class="flex items-center gap-2 mb-1">
@@ -691,7 +694,7 @@ async function openAllNews() {
                 ${isRecent ? '<span class="bg-indigo-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">NEW</span>' : ''}
             </div>
             <h4 class="font-black text-slate-800 text-base mb-2 leading-tight">${escapeHtml(n.title)}</h4>
-            ${n.content ? `<div class="lesson-content text-sm font-medium leading-relaxed text-slate-600">${n.content}</div>` : ''}
+            ${content.trim() ? `<div class="lesson-content text-sm font-medium leading-relaxed text-slate-600">${content}</div>` : ''}
         </div>`;
     }).join('');
 
