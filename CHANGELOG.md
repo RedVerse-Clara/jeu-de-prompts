@@ -4,6 +4,15 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-06-19 — Fond bleuté unifié sur tout le site
+
+- Application du dégradé bleuté de la page d'accueil (`linear-gradient` indigo → violet → crème, identique à la newsletter Substack) à **l'ensemble du site** : auparavant seule la landing l'affichait, le reste (app connectée, console admin, blog, mentions légales) était sur fond gris plat
+- Dégradé porté par le `<body>` avec `background-attachment: fixed` (fond stable et uniforme au scroll) ; retrait des classes `bg-slate-50/50` qui le masquaient
+- Console admin passée de `bg-slate-50` à `gradient-hero`
+- Template blog mis à jour + 53 pages régénérées ; bump des cache-busters `style.css?v=7`
+
+---
+
 ## 2026-06-19 — Correctif publication des actualités + nettoyage landing
 
 ### Actualités (correction)

@@ -177,7 +177,7 @@ function articlePage(item, prev, next, related) {
     <!-- Styles -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../style.css?v=7">
     <style>::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#a5b4fc;border-radius:10px}::-webkit-scrollbar-thumb:hover{background:#6366f1}::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}html{scrollbar-width:auto;scrollbar-color:#a5b4fc #f1f5f9}</style>
     <!-- Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a8cd9e80-8934-45bf-8a9f-154577b95f8e"></script>
@@ -222,7 +222,7 @@ function articlePage(item, prev, next, related) {
     }
     </script>
 </head>
-<body class="bg-slate-50/50 min-h-screen text-slate-800">
+<body class="min-h-screen text-slate-800">
     <header class="bg-white border-b px-6 py-4 flex items-center justify-between">
         <a href="../index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity no-underline">
             <img src="../Logo Jeu de Prompts.png" alt="Logo" class="h-10 w-auto">
@@ -341,7 +341,7 @@ function indexPage(items) {
     <!-- Styles -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../style.css?v=7">
     <style>::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#a5b4fc;border-radius:10px}::-webkit-scrollbar-thumb:hover{background:#6366f1}::-webkit-scrollbar-track{background:#f1f5f9;border-radius:10px}html{scrollbar-width:auto;scrollbar-color:#a5b4fc #f1f5f9}</style>
     <!-- Analytics -->
     <script defer src="https://cloud.umami.is/script.js" data-website-id="a8cd9e80-8934-45bf-8a9f-154577b95f8e"></script>
@@ -369,7 +369,7 @@ function indexPage(items) {
     }
     </script>
 </head>
-<body class="bg-slate-50/50 min-h-screen text-slate-800">
+<body class="min-h-screen text-slate-800">
     <header class="bg-white border-b px-6 py-4 flex items-center justify-between">
         <a href="../index.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity no-underline">
             <img src="../Logo Jeu de Prompts.png" alt="Logo" class="h-10 w-auto">

@@ -1,6 +1,8 @@
 body {
     font-family: 'Outfit', sans-serif;
-    background: #f8fafc;
+    /* Fond bleuté unifié sur tout le site (identique à la landing / Substack) */
+    background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 40%, #fefce8 100%);
+    background-attachment: fixed;
     color: #1e293b;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -634,6 +636,7 @@ body {
 /* Gradient Hero */
 .gradient-hero {
     background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 40%, #fefce8 100%);
+    background-attachment: fixed;
 }
 
 /* Gradient Overlay */
