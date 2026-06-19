@@ -356,21 +356,25 @@ body {
     background: transparent;
 }
 
-/* Modal "Toutes les actualités" : retour à la ligne automatique,
-   aucun ascenseur horizontal quel que soit le contenu collé. */
+/* Modal "Toutes les actualités" : retour à la ligne automatique aux espaces,
+   sans jamais couper un mot, et aucun ascenseur horizontal. */
 #allNewsModal .custom-scrollbar {
     overflow-x: hidden;
+}
+#allNewsModal .lesson-content {
+    text-align: left;            /* pas de justification dans la modal news */
 }
 #allNewsModal .lesson-content,
 #allNewsModal .lesson-content * {
     max-width: 100%;
-    white-space: normal;
-    overflow-wrap: break-word;
+    white-space: normal;         /* annule un éventuel nowrap → retour à la ligne */
+    overflow-wrap: normal;       /* ne coupe jamais un mot */
+    word-break: normal;
+    hyphens: none;
 }
-#allNewsModal .lesson-content pre,
-#allNewsModal .lesson-content code {
-    white-space: pre-wrap;
-    word-break: break-word;
+#allNewsModal .lesson-content pre {
+    white-space: pre-wrap;       /* le code revient à la ligne */
+    overflow-wrap: anywhere;     /* casse seulement une ligne de code trop longue */
 }
 #allNewsModal .lesson-content img,
 #allNewsModal .lesson-content iframe,

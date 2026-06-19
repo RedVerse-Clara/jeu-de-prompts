@@ -7,8 +7,8 @@ Historique de toutes les modifications apportées au projet.
 ## 2026-06-19 — Correctif affichage de la modal Actualités
 
 - **Suppression de l'ascenseur horizontal** dans la fenêtre « Toutes les actualités » : le conteneur en `overflow-y: auto` faisait basculer l'axe horizontal en `auto` (quirk CSS), créant une barre de défilement dès qu'un titre, un bloc de code ou une URL dépassait la largeur
-- Retour à la ligne automatique forcé sur tout le contenu de la modal (`overflow-wrap`, `white-space: normal`, `pre-wrap` pour le code), médias bornés à `max-width: 100%`, et `overflow-x: hidden` en filet de sécurité — le tout scopé à `#allNewsModal` pour ne pas altérer le rendu justifié voulu des fiches
-- Bump cache-buster `style.css?v=8`
+- Retour à la ligne automatique **aux espaces uniquement** (jamais au milieu d'un mot) : `white-space: normal` pour annuler le `nowrap`, `overflow-wrap: normal` + `word-break: normal` pour ne pas tronquer, contenu aligné à gauche dans la modal, `pre-wrap` pour le code, médias bornés à `max-width: 100%`, et `overflow-x: hidden` en filet de sécurité — le tout scopé à `#allNewsModal` pour ne pas altérer le rendu justifié voulu des fiches
+- Bump cache-buster `style.css?v=9`
 
 ---
 
