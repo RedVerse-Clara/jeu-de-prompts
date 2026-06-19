@@ -356,6 +356,29 @@ body {
     background: transparent;
 }
 
+/* Modal "Toutes les actualités" : retour à la ligne automatique,
+   aucun ascenseur horizontal quel que soit le contenu collé. */
+#allNewsModal .custom-scrollbar {
+    overflow-x: hidden;
+}
+#allNewsModal .lesson-content,
+#allNewsModal .lesson-content * {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+#allNewsModal .lesson-content pre,
+#allNewsModal .lesson-content code {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+#allNewsModal .lesson-content img,
+#allNewsModal .lesson-content iframe,
+#allNewsModal .lesson-content video {
+    max-width: 100%;
+    height: auto;
+}
+
 /* Global thin scrollbar */
 ::-webkit-scrollbar {
     width: 4px;

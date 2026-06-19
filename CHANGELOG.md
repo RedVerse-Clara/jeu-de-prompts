@@ -4,6 +4,14 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-06-19 — Correctif affichage de la modal Actualités
+
+- **Suppression de l'ascenseur horizontal** dans la fenêtre « Toutes les actualités » : le conteneur en `overflow-y: auto` faisait basculer l'axe horizontal en `auto` (quirk CSS), créant une barre de défilement dès qu'un titre, un bloc de code ou une URL dépassait la largeur
+- Retour à la ligne automatique forcé sur tout le contenu de la modal (`overflow-wrap`, `white-space: normal`, `pre-wrap` pour le code), médias bornés à `max-width: 100%`, et `overflow-x: hidden` en filet de sécurité — le tout scopé à `#allNewsModal` pour ne pas altérer le rendu justifié voulu des fiches
+- Bump cache-buster `style.css?v=8`
+
+---
+
 ## 2026-06-19 — Fond bleuté unifié sur tout le site
 
 - Application du dégradé bleuté de la page d'accueil (`linear-gradient` indigo → violet → crème, identique à la newsletter Substack) à **l'ensemble du site** : auparavant seule la landing l'affichait, le reste (app connectée, console admin, blog, mentions légales) était sur fond gris plat
