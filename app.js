@@ -52,7 +52,8 @@ let state = {
     currentCategory: null,
     activeResource: null,
     searchQuery: '',
-    viewedIds: new Set()
+    viewedIds: new Set(),
+    parcours: []
 };
 
 // Nombre de jours pendant lesquels une fiche est considérée "récente" (badge NEW)
@@ -518,7 +519,8 @@ async function initData() {
             fetchCategories(),
             fetchNews(),
             fetchLinks(),
-            fetchViews()
+            fetchViews(),
+            fetchParcours()
         ]);
         renderNav();
         renderNews();
@@ -590,6 +592,10 @@ async function renderNav() {
 
     categoryNav.innerHTML = catButtons + `
         <div class="w-px h-5 bg-slate-200 mx-1.5 self-center shrink-0"></div>
+        <button onclick="window.app.openParcours()"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
+            bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:shadow-sm border border-indigo-100">
+            🧭 Parcours
+        </button>
         <button onclick="window.app.openCommunity()"            class="nav-btn-desktop py-2 px-2.5 rounded-xl text-[clamp(8px,0.7vw,12px)] font-black uppercase tracking-wide whitespace-nowrap transition-all
             bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:shadow-sm border border-emerald-100">
             🗣️ Communauté
@@ -631,6 +637,10 @@ async function renderNav() {
             </div>
             <div class="border-t border-slate-100 p-4 space-y-1">
                 <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 px-4 mb-2">Espace</p>
+                <button onclick="window.app.openParcours(); window.app.closeMobileMenu();"
+                    class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-indigo-700 hover:bg-indigo-50 transition-all flex items-center gap-3">
+                    <span class="text-base">🧭</span> Parcours
+                </button>
                 <button onclick="window.app.openCommunity(); window.app.closeMobileMenu();"
                     class="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-emerald-700 hover:bg-emerald-50 transition-all flex items-center gap-3">
                     <span class="text-base">🗣️</span> Communauté
@@ -1435,6 +1445,149 @@ async function loadResourceFromAnywhere(id, opts = {}) {
     return true;
 }
 
+// --- PARCOURS (parcours guidés) ---
+async function fetchParcours() {
+    try {
+        const { data, error } = await supabase
+            .from('parcours')
+            .select('id, title, subtitle, icon, position, parcours_fiches(resource_id, position)')
+            .order('position', { ascending: true });
+        if (!error && data) {
+            state.parcours = data.map(p => ({
+                id: p.id,
+                title: p.title,
+                subtitle: p.subtitle,
+                icon: p.icon,
+                position: p.position,
+                fiches: (p.parcours_fiches || [])
+                    .slice()
+                    .sort((a, b) => (a.position || 0) - (b.position || 0))
+                    .map(pf => pf.resource_id)
+            }));
+        }
+    } catch (err) {
+        console.warn('Table "parcours" indisponible (parcours désactivés) :', err?.message);
+    }
+}
+
+function parcoursProgress(p) {
+    const total = p.fiches.length;
+    const done = p.fiches.filter(fid => state.viewedIds.has(String(fid))).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return { total, done, pct };
+}
+
+async function fetchResourcesByIds(ids) {
+    if (!ids || !ids.length) return {};
+    const { data } = await supabase.from('resources').select('id, title').in('id', ids);
+    const map = {};
+    (data || []).forEach(r => { map[r.id] = r; });
+    return map;
+}
+
+async function openParcours() {
+    clearSearch();
+    emptyState.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+
+    if (!state.parcours.length) await fetchParcours();
+
+    let body;
+    if (!state.parcours.length) {
+        body = `<div class="text-center py-12">
+            <div class="text-5xl mb-6 opacity-20">🧭</div>
+            <p class="text-slate-500 font-medium text-sm">Aucun parcours pour le moment.</p>
+        </div>`;
+    } else {
+        const cards = state.parcours.map(p => {
+            const { total, done, pct } = parcoursProgress(p);
+            const complete = total > 0 && done === total;
+            return `
+            <button onclick="window.app.openParcoursDetail(${Number(p.id)})"
+                class="text-left bg-white rounded-3xl border border-slate-200 p-6 hover:border-indigo-300 hover:shadow-lg transition-all group">
+                <div class="flex items-start gap-4">
+                    <div class="text-3xl shrink-0">${escapeHtml(p.icon || '🧭')}</div>
+                    <div class="min-w-0 flex-1">
+                        <h3 class="text-base font-black text-slate-900 group-hover:text-indigo-700 transition-colors leading-snug">${escapeHtml(p.title)}</h3>
+                        ${p.subtitle ? `<p class="text-xs text-slate-500 font-medium mt-1 leading-relaxed">${escapeHtml(p.subtitle)}</p>` : ''}
+                    </div>
+                </div>
+                <div class="mt-5">
+                    <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wide mb-1.5">
+                        <span class="${complete ? 'text-emerald-600' : 'text-slate-400'}">${complete ? '✓ Terminé' : done + '/' + total + ' étapes'}</span>
+                        <span class="text-slate-400">${pct}%</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full ${complete ? 'bg-emerald-500' : 'bg-indigo-500'} transition-all" style="width:${pct}%"></div>
+                    </div>
+                </div>
+            </button>`;
+        }).join('');
+        body = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">${cards}</div>`;
+    }
+
+    resourceDisplay.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 md:p-10 animate-fade-in">
+            <div class="mb-6">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">🧭 Parcours guidés</h2>
+                <p class="text-slate-500 font-medium text-sm mt-2">Des séquences de fiches dans l'ordre, pour avancer pas à pas vers un objectif.</p>
+            </div>
+            ${body}
+        </div>`;
+}
+
+async function openParcoursDetail(id) {
+    clearSearch();
+    emptyState.classList.add('hidden');
+    resourceDisplay.classList.remove('hidden');
+
+    if (!state.parcours.length) await fetchParcours();
+    const p = state.parcours.find(x => x.id == id);
+    if (!p) return openParcours();
+
+    const map = await fetchResourcesByIds(p.fiches);
+    const { total, done, pct } = parcoursProgress(p);
+    const complete = total > 0 && done === total;
+
+    const steps = p.fiches.map((fid, i) => {
+        const r = map[fid];
+        const viewed = state.viewedIds.has(String(fid));
+        const title = r ? escapeHtml(r.title) : '<span class="text-slate-300 italic">Fiche indisponible</span>';
+        const badge = viewed
+            ? `<div class="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center shrink-0"><svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>`
+            : `<div class="w-7 h-7 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center shrink-0 text-[11px] font-black text-slate-400">${i + 1}</div>`;
+        const clickable = r ? `onclick="window.app.loadResourceFromAnywhere(${Number(fid)})"` : '';
+        return `
+        <button ${clickable} class="w-full flex items-center gap-3 p-4 rounded-2xl border border-slate-100 ${r ? 'hover:border-indigo-200 hover:bg-indigo-50/40' : 'opacity-60 cursor-default'} transition-all text-left">
+            ${badge}
+            <span class="text-sm font-bold ${viewed ? 'text-slate-400' : 'text-slate-700'} flex-1 min-w-0">${title}</span>
+            ${r ? '<span class="text-slate-300">→</span>' : ''}
+        </button>`;
+    }).join('');
+
+    resourceDisplay.innerHTML = `
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 p-6 md:p-10 animate-fade-in">
+            <button onclick="window.app.openParcours()" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors mb-6 flex items-center gap-1">← Tous les parcours</button>
+            <div class="flex items-start gap-4 mb-6">
+                <div class="text-4xl shrink-0">${escapeHtml(p.icon || '🧭')}</div>
+                <div class="min-w-0">
+                    <h2 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">${escapeHtml(p.title)}</h2>
+                    ${p.subtitle ? `<p class="text-slate-500 font-medium text-sm mt-1">${escapeHtml(p.subtitle)}</p>` : ''}
+                </div>
+            </div>
+            <div class="mb-6">
+                <div class="flex items-center justify-between text-[11px] font-black uppercase tracking-wide mb-1.5">
+                    <span class="${complete ? 'text-emerald-600' : 'text-slate-400'}">${complete ? '✓ Parcours terminé' : done + '/' + total + ' étapes terminées'}</span>
+                    <span class="text-slate-400">${pct}%</span>
+                </div>
+                <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full rounded-full ${complete ? 'bg-emerald-500' : 'bg-indigo-500'} transition-all" style="width:${pct}%"></div>
+                </div>
+            </div>
+            <div class="space-y-2">${steps}</div>
+        </div>`;
+}
+
 // --- ALL NOTES ---
 async function openAllNotes() {
     clearSearch();
@@ -1900,6 +2053,7 @@ function setAdminView(view) {
     switch (view) {
         case 'users': renderAdminUsers(); break;
         case 'sections': renderAdminSections(); break;
+        case 'parcours': renderAdminParcours(); break;
         case 'content': renderAdminContent(); break;
         case 'news': renderAdminNews(); break;
         case 'links': renderAdminLinks(); break;
@@ -2314,6 +2468,249 @@ async function moveSection(sectionId, direction) {
     await fetchCategories();
     renderNav();
     renderAdminSections();
+}
+
+// --- ADMIN: PARCOURS ---
+async function renderAdminParcours() {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement des parcours...</div>`;
+
+    const { data, error } = await supabase
+        .from('parcours')
+        .select('id, title, subtitle, icon, position, parcours_fiches(id)')
+        .order('position', { ascending: true });
+    if (error) {
+        adminViewContainer.innerHTML = `<div class="p-20 text-red-500">Erreur: ${escapeHtml(error.message)}<br><span class="text-xs text-slate-400">As-tu bien créé les tables "parcours" et "parcours_fiches" dans Supabase ?</span></div>`;
+        return;
+    }
+
+    const list = data || [];
+    const rows = list.map((p, idx) => {
+        const nb = (p.parcours_fiches || []).length;
+        return `
+        <tr class="border-b last:border-0 hover:bg-slate-50/50">
+            <td class="py-3 w-10 text-center">
+                <div class="flex flex-col gap-0.5">
+                    <button onclick="window.app.moveParcours(${Number(p.id)}, 'up')" class="text-slate-300 hover:text-indigo-600 transition-colors ${idx === 0 ? 'invisible' : ''}" title="Monter">
+                        <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                    </button>
+                    <button onclick="window.app.moveParcours(${Number(p.id)}, 'down')" class="text-slate-300 hover:text-indigo-600 transition-colors ${idx === list.length - 1 ? 'invisible' : ''}" title="Descendre">
+                        <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                </div>
+            </td>
+            <td class="py-3">
+                <p class="text-slate-900 font-bold text-sm">${escapeHtml(p.icon || '🧭')} ${escapeHtml(p.title)}</p>
+                ${p.subtitle ? `<p class="text-[11px] text-slate-400 font-medium">${escapeHtml(p.subtitle)}</p>` : ''}
+            </td>
+            <td class="py-3 text-center"><span class="bg-slate-100 text-slate-500 text-[11px] px-2.5 py-1 rounded-full font-black">${nb} fiche${nb > 1 ? 's' : ''}</span></td>
+            <td class="py-3 space-x-2 whitespace-nowrap">
+                <button onclick="window.app.renderAdminParcoursDetail(${Number(p.id)})" class="text-indigo-600 hover:underline text-xs font-bold">Gérer les fiches</button>
+                <button onclick="window.app.editParcours(${Number(p.id)}, '${escapeAttr(p.title)}', '${escapeAttr(p.subtitle || '')}', '${escapeAttr(p.icon || '')}')" class="text-slate-500 hover:underline text-xs font-bold">Renommer</button>
+                <button onclick="window.app.deleteParcours(${Number(p.id)}, '${escapeAttr(p.title)}')" class="text-red-500 hover:underline text-xs font-bold">Supprimer</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    adminViewContainer.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-black text-slate-900">Gestion des parcours</h2>
+            <button onclick="window.app.showParcoursForm()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all">+ Nouveau parcours</button>
+        </div>
+        <div id="admin-parcours-form" class="hidden mb-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+            <input type="hidden" id="admin-parcours-id">
+            <div class="space-y-3">
+                <div class="flex gap-3">
+                    <input type="text" id="admin-parcours-icon" placeholder="🧭" maxlength="4" class="w-20 px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-center text-xl">
+                    <input type="text" id="admin-parcours-title" placeholder="Titre du parcours" class="flex-1 px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold">
+                </div>
+                <input type="text" id="admin-parcours-subtitle" placeholder="Sous-titre (objectif du parcours)" class="w-full px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-medium text-slate-500">
+                <div class="flex gap-2">
+                    <button onclick="window.app.saveParcours()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700">Enregistrer</button>
+                    <button onclick="document.getElementById('admin-parcours-form').classList.add('hidden')" class="px-6 py-2 text-slate-500 font-bold text-xs">Annuler</button>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] uppercase font-black text-slate-400 border-b bg-slate-50/50">
+                        <th class="py-2 px-2 w-10 text-center">Ordre</th>
+                        <th class="py-2 px-2">Parcours</th>
+                        <th class="py-2 px-2 text-center">Fiches</th>
+                        <th class="py-2 px-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm font-medium">${rows || '<tr><td colspan="4" class="py-10 text-center text-slate-400 text-xs">Aucun parcours. Crée le premier avec « + Nouveau parcours ».</td></tr>'}</tbody>
+            </table>
+        </div>`;
+}
+
+function showParcoursForm(id = null, title = '', subtitle = '', icon = '') {
+    const form = document.getElementById('admin-parcours-form');
+    if (!form) return;
+    document.getElementById('admin-parcours-id').value = id || '';
+    document.getElementById('admin-parcours-title').value = title;
+    document.getElementById('admin-parcours-subtitle').value = subtitle;
+    document.getElementById('admin-parcours-icon').value = icon;
+    form.classList.remove('hidden');
+}
+
+function editParcours(id, title, subtitle, icon) {
+    showParcoursForm(id, title, subtitle, icon);
+}
+
+async function saveParcours() {
+    const id = document.getElementById('admin-parcours-id').value;
+    const title = document.getElementById('admin-parcours-title').value.trim();
+    const subtitle = document.getElementById('admin-parcours-subtitle').value.trim();
+    const icon = document.getElementById('admin-parcours-icon').value.trim() || '🧭';
+    if (!title) return alert('Le titre du parcours est requis.');
+
+    let error;
+    if (id) {
+        ({ error } = await supabase.from('parcours').update({ title, subtitle, icon }).eq('id', id));
+    } else {
+        const { data: rows } = await supabase.from('parcours').select('position').order('position', { ascending: false }).limit(1);
+        const position = ((rows && rows[0] && rows[0].position) || 0) + 10;
+        ({ error } = await supabase.from('parcours').insert({ title, subtitle, icon, position }));
+    }
+    if (error) return alert('Erreur: ' + error.message);
+    await fetchParcours();
+    renderNav();
+    renderAdminParcours();
+}
+
+async function deleteParcours(id, title) {
+    if (!confirm(`Supprimer le parcours "${title}" ?\n\n(Les fiches ne sont PAS supprimées, seul le parcours disparaît.)`)) return;
+    const { error } = await supabase.from('parcours').delete().eq('id', id);
+    if (error) return alert('Erreur: ' + error.message);
+    await fetchParcours();
+    renderNav();
+    renderAdminParcours();
+}
+
+async function moveParcours(id, direction) {
+    const { data: list } = await supabase.from('parcours').select('id, position').order('position');
+    if (!list) return;
+    for (let i = 0; i < list.length; i++) {
+        if (list[i].position == null) {
+            await supabase.from('parcours').update({ position: (i + 1) * 10 }).eq('id', list[i].id);
+            list[i].position = (i + 1) * 10;
+        }
+    }
+    const idx = list.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= list.length) return;
+    const posA = list[idx].position, posB = list[swapIdx].position;
+    await supabase.from('parcours').update({ position: posB }).eq('id', list[idx].id);
+    await supabase.from('parcours').update({ position: posA }).eq('id', list[swapIdx].id);
+    await fetchParcours();
+    renderAdminParcours();
+}
+
+// Gestion des fiches d'UN parcours
+async function renderAdminParcoursDetail(parcoursId) {
+    adminViewContainer.innerHTML = `<div class="p-20 text-center text-slate-400">Chargement du parcours...</div>`;
+
+    const { data: parcours } = await supabase.from('parcours').select('id, title, icon').eq('id', parcoursId).single();
+    const { data: items } = await supabase
+        .from('parcours_fiches')
+        .select('id, resource_id, position, resources(title)')
+        .eq('parcours_id', parcoursId)
+        .order('position', { ascending: true });
+    const { data: allFiches } = await supabase.from('resources').select('id, title').order('title');
+
+    if (!parcours) { renderAdminParcours(); return; }
+
+    const list = items || [];
+    const usedIds = new Set(list.map(it => String(it.resource_id)));
+    const stepRows = list.map((it, idx) => `
+        <tr class="border-b last:border-0 hover:bg-slate-50/50">
+            <td class="py-3 w-10 text-center">
+                <div class="flex flex-col gap-0.5">
+                    <button onclick="window.app.moveParcoursFiche(${Number(it.id)}, ${Number(parcoursId)}, 'up')" class="text-slate-300 hover:text-indigo-600 ${idx === 0 ? 'invisible' : ''}" title="Monter">
+                        <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                    </button>
+                    <button onclick="window.app.moveParcoursFiche(${Number(it.id)}, ${Number(parcoursId)}, 'down')" class="text-slate-300 hover:text-indigo-600 ${idx === list.length - 1 ? 'invisible' : ''}" title="Descendre">
+                        <svg class="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                </div>
+            </td>
+            <td class="py-3 w-8 text-center text-[11px] font-black text-slate-300">${idx + 1}</td>
+            <td class="py-3"><p class="text-slate-900 font-bold text-sm">${it.resources ? escapeHtml(it.resources.title) : '<span class="text-red-400 italic">Fiche supprimée</span>'}</p></td>
+            <td class="py-3 text-right"><button onclick="window.app.removeFicheFromParcours(${Number(it.id)}, ${Number(parcoursId)})" class="text-red-500 hover:underline text-xs font-bold">Retirer</button></td>
+        </tr>`).join('');
+
+    const options = (allFiches || [])
+        .filter(f => !usedIds.has(String(f.id)))
+        .map(f => `<option value="${Number(f.id)}">${escapeHtml(f.title)}</option>`)
+        .join('');
+
+    adminViewContainer.innerHTML = `
+        <button onclick="window.app.setAdminView('parcours')" class="text-xs font-black text-slate-400 hover:text-indigo-600 transition-colors mb-4 flex items-center gap-1">← Tous les parcours</button>
+        <h2 class="text-2xl font-black text-slate-900 mb-1">${escapeHtml(parcours.icon || '🧭')} ${escapeHtml(parcours.title)}</h2>
+        <p class="text-slate-400 text-xs font-medium mb-6">Ordonne les étapes avec les flèches. Une fiche peut appartenir à plusieurs parcours.</p>
+
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 flex gap-2 items-center">
+            <select id="admin-add-fiche-select" class="flex-1 px-4 py-3 border rounded-xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-medium text-sm bg-white">
+                ${options || '<option value="">Toutes les fiches sont déjà dans ce parcours</option>'}
+            </select>
+            <button onclick="window.app.addFicheToParcours(${Number(parcoursId)})" class="bg-indigo-600 text-white px-5 py-3 rounded-xl text-xs font-black hover:bg-indigo-700 whitespace-nowrap">+ Ajouter</button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-[10px] uppercase font-black text-slate-400 border-b bg-slate-50/50">
+                        <th class="py-2 px-2 w-10 text-center">Ordre</th>
+                        <th class="py-2 px-2 w-8 text-center">#</th>
+                        <th class="py-2 px-2">Fiche</th>
+                        <th class="py-2 px-2 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm font-medium">${stepRows || '<tr><td colspan="4" class="py-10 text-center text-slate-400 text-xs">Aucune fiche. Ajoute la première étape ci-dessus.</td></tr>'}</tbody>
+            </table>
+        </div>`;
+}
+
+async function addFicheToParcours(parcoursId) {
+    const sel = document.getElementById('admin-add-fiche-select');
+    const resourceId = sel && sel.value ? parseInt(sel.value) : null;
+    if (!resourceId) return;
+    const { data: rows } = await supabase.from('parcours_fiches').select('position').eq('parcours_id', parcoursId).order('position', { ascending: false }).limit(1);
+    const position = ((rows && rows[0] && rows[0].position) || 0) + 10;
+    const { error } = await supabase.from('parcours_fiches').insert({ parcours_id: parcoursId, resource_id: resourceId, position });
+    if (error) return alert('Erreur: ' + error.message);
+    await fetchParcours();
+    renderAdminParcoursDetail(parcoursId);
+}
+
+async function removeFicheFromParcours(parcoursFicheId, parcoursId) {
+    const { error } = await supabase.from('parcours_fiches').delete().eq('id', parcoursFicheId);
+    if (error) return alert('Erreur: ' + error.message);
+    await fetchParcours();
+    renderAdminParcoursDetail(parcoursId);
+}
+
+async function moveParcoursFiche(parcoursFicheId, parcoursId, direction) {
+    const { data: list } = await supabase.from('parcours_fiches').select('id, position').eq('parcours_id', parcoursId).order('position');
+    if (!list) return;
+    for (let i = 0; i < list.length; i++) {
+        if (list[i].position == null) {
+            await supabase.from('parcours_fiches').update({ position: (i + 1) * 10 }).eq('id', list[i].id);
+            list[i].position = (i + 1) * 10;
+        }
+    }
+    const idx = list.findIndex(it => it.id === parcoursFicheId);
+    if (idx === -1) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= list.length) return;
+    const posA = list[idx].position, posB = list[swapIdx].position;
+    await supabase.from('parcours_fiches').update({ position: posB }).eq('id', list[idx].id);
+    await supabase.from('parcours_fiches').update({ position: posA }).eq('id', list[swapIdx].id);
+    await fetchParcours();
+    renderAdminParcoursDetail(parcoursId);
 }
 
 async function renderAdminContent() {
@@ -2852,6 +3249,18 @@ window.app = {
     goHome,
     toggleFavorite,
     toggleViewed,
+    openParcours,
+    openParcoursDetail,
+    renderAdminParcours,
+    renderAdminParcoursDetail,
+    showParcoursForm,
+    editParcours,
+    saveParcours,
+    deleteParcours,
+    moveParcours,
+    addFicheToParcours,
+    removeFicheFromParcours,
+    moveParcoursFiche,
     openFavorites,
     loadResourceFromAnywhere,
     openAllNotes,

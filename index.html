@@ -552,6 +552,10 @@
                     <div class="text-6xl mb-8 opacity-20" aria-hidden="true">🚀</div>
                     <h2 class="text-2xl font-black text-slate-900 mb-3 tracking-tight">S&eacute;lectionnez une mission</h2>
                     <p class="text-slate-500 font-medium text-sm">Choisissez une fiche dans le menu pour commencer.</p>
+                    <button onclick="window.app.openParcours()"
+                        class="mt-8 inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl text-sm font-black hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all">
+                        <span aria-hidden="true">🧭</span> Par o&ugrave; commencer&nbsp;? Voir les parcours guid&eacute;s
+                    </button>
                 </div>
             </div>
         </main>
@@ -604,6 +608,11 @@
                             class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 text-slate-500"
                             data-view="sections">
                             <span aria-hidden="true">📂</span> Sections
+                        </button>
+                        <button onclick="window.app.setAdminView('parcours')"
+                            class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 text-slate-500"
+                            data-view="parcours">
+                            <span aria-hidden="true">🧭</span> Parcours
                         </button>
                         <button onclick="window.app.setAdminView('content')"
                             class="admin-nav-btn w-full text-left p-4 rounded-2xl font-black text-sm transition-all hover:bg-white border border-transparent hover:border-slate-200 flex items-center gap-3 text-slate-500"
@@ -769,7 +778,7 @@
         }
     });
     </script>
-    <script src="app.js?v=9" type="module"></script>
+    <script src="app.js?v=10" type="module"></script>
     <script defer src="toc.js?v=6"></script>
     <script defer src="pwa.js?v=3"></script>
 </body>
