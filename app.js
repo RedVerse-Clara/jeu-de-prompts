@@ -51,8 +51,18 @@ let state = {
     links: [],
     currentCategory: null,
     activeResource: null,
-    searchQuery: ''
+    searchQuery: '',
+    viewedIds: new Set()
 };
+
+// Nombre de jours pendant lesquels une fiche est considérée "récente" (badge NEW)
+const NEW_FICHE_DAYS = 14;
+
+function isRecentResource(r) {
+    if (!r || !r.created_at) return false;
+    const ageDays = (Date.now() - new Date(r.created_at).getTime()) / 86400000;
+    return ageDays >= 0 && ageDays <= NEW_FICHE_DAYS;
+}
 
 function clearSearch() {
     state.searchQuery = '';
@@ -507,7 +517,8 @@ async function initData() {
         await Promise.all([
             fetchCategories(),
             fetchNews(),
-            fetchLinks()
+            fetchLinks(),
+            fetchViews()
         ]);
         renderNav();
         renderNews();
@@ -832,13 +843,19 @@ function renderResourceList() {
         const rid = escapeAttr(r.id);
         const title = escapeHtml(r.title);
         const isActive = state.activeResource?.id === r.id;
+        const isViewed = state.viewedIds.has(String(r.id));
+        const isRecent = isRecentResource(r);
+        const dot = isViewed
+            ? `<div class="w-4 h-4 rounded-full shrink-0 bg-emerald-500 flex items-center justify-center" title="Fiche vue"><svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>`
+            : `<div class="w-4 h-4 border-2 ${isActive ? 'border-indigo-400 bg-indigo-100' : 'border-slate-100'} rounded-full shrink-0"></div>`;
         return `
         <button onclick="window.app.loadResource('${rid}')"
             ${isActive ? 'aria-current="true"' : ''}
             class="w-full transition-sidebar flex items-center gap-2.5 px-4 py-3 text-xs font-bold border-b border-slate-50 hover:bg-slate-100 text-left
             ${isActive ? 'sidebar-active text-indigo-900 bg-indigo-50/30' : 'text-slate-500'}">
-            <div class="w-4 h-4 border-2 ${isActive ? 'border-indigo-400 bg-indigo-100' : 'border-slate-100'} rounded-full shrink-0"></div>
-            <span class="line-clamp-2">${title}</span>
+            ${dot}
+            <span class="line-clamp-2 flex-1 min-w-0 ${isViewed && !isActive ? 'text-slate-400' : ''}">${title}</span>
+            ${isRecent ? '<span class="badge-new shrink-0">NEW</span>' : ''}
         </button>`;
     }).join('');
 
@@ -963,6 +980,7 @@ async function loadResource(id, opts = {}) {
         .eq('resource_id', res.id)
         .single();
     const isFav = !!favCheck;
+    const isViewed = state.viewedIds.has(String(res.id));
 
     // Fetch comments for this resource
     const { data: comments } = await supabase
@@ -993,6 +1011,11 @@ async function loadResource(id, opts = {}) {
                         <button onclick="window.app.toggleFavorite(${res.id})"
                             class="w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border ${isFav ? 'bg-amber-50 border-amber-200 text-amber-500' : 'bg-slate-50 border-slate-100 text-slate-300 hover:text-amber-400'}">
                             <svg class="h-5 w-5" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.54 1.118l-3.976-2.888a1 1 0 00-1.175 0l-3.976 2.888c-.784.57-1.838-.196-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                        </button>
+                        <button onclick="window.app.toggleViewed(${res.id})" title="${isViewed ? 'Marquée comme vue — cliquer pour annuler' : 'Marquer cette fiche comme vue'}"
+                            class="h-12 px-4 rounded-2xl flex items-center gap-2 text-xs font-black uppercase tracking-wide transition-all shadow-sm border ${isViewed ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400 hover:text-emerald-500 hover:border-emerald-200'}">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="${isViewed ? 3 : 2}" d="M5 13l4 4L19 7"/></svg>
+                            <span>${isViewed ? 'Vue' : 'Marquer vue'}</span>
                         </button>
                         ${adminActions}
                     </div>
@@ -1320,6 +1343,47 @@ async function toggleFavorite(resourceId) {
         await supabase.from('favorites').insert({ user_id: state.user.id, resource_id: resourceId });
     }
     // Reload to update the star
+    await loadResource(resourceId);
+}
+
+// --- VUES / PROGRESSION ---
+// Précharge les fiches déjà marquées "vue" par l'utilisateur.
+// Tolérant : si la table `views` n'existe pas encore, on ignore sans casser l'app.
+async function fetchViews() {
+    try {
+        const { data, error } = await supabase
+            .from('views')
+            .select('resource_id')
+            .eq('user_id', state.user.id);
+        if (!error && data) {
+            state.viewedIds = new Set(data.map(v => String(v.resource_id)));
+        }
+    } catch (err) {
+        console.warn('Table "views" indisponible (progression désactivée) :', err?.message);
+    }
+}
+
+async function toggleViewed(resourceId) {
+    const key = String(resourceId);
+    const wasViewed = state.viewedIds.has(key);
+
+    // Mise à jour optimiste de l'état local (réactivité immédiate)
+    if (wasViewed) state.viewedIds.delete(key);
+    else state.viewedIds.add(key);
+
+    try {
+        if (wasViewed) {
+            await supabase.from('views').delete()
+                .eq('user_id', state.user.id)
+                .eq('resource_id', resourceId);
+        } else {
+            await supabase.from('views').insert({ user_id: state.user.id, resource_id: resourceId });
+        }
+    } catch (err) {
+        console.warn('Impossible d\'enregistrer la vue :', err?.message);
+    }
+
+    // Recharge la fiche (met à jour le bouton + la liste via renderResourceList)
     await loadResource(resourceId);
 }
 
@@ -2787,6 +2851,7 @@ window.app = {
     closeMessages,
     goHome,
     toggleFavorite,
+    toggleViewed,
     openFavorites,
     loadResourceFromAnywhere,
     openAllNotes,
