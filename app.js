@@ -53,11 +53,47 @@ let state = {
     activeResource: null,
     searchQuery: '',
     viewedIds: new Set(),
+    seenNewIds: new Set(),
     parcours: []
 };
 
 // Nombre de jours pendant lesquels une fiche est considérée "récente" (badge NEW)
 const NEW_FICHE_DAYS = 14;
+
+// --- Badge NEW : suivi des fiches récentes déjà consultées ---
+// Stocké en localStorage (par utilisateur), indépendant du système "Vue"/progression.
+// Le badge NEW disparaît dès qu'on ouvre la fiche.
+function seenNewStorageKey() {
+    return `seen_new_ids_${state.user?.id || 'anon'}`;
+}
+
+function loadSeenNewIds() {
+    try {
+        const raw = localStorage.getItem(seenNewStorageKey());
+        state.seenNewIds = new Set(raw ? JSON.parse(raw) : []);
+    } catch (err) {
+        state.seenNewIds = new Set();
+    }
+}
+
+// Marque une fiche récente comme "vue" pour le badge NEW (à l'ouverture).
+// Retourne true si l'état a changé (pour déclencher un re-render de la liste).
+function markNewSeen(resourceId) {
+    const key = String(resourceId);
+    if (state.seenNewIds.has(key)) return false;
+    state.seenNewIds.add(key);
+    try {
+        localStorage.setItem(seenNewStorageKey(), JSON.stringify([...state.seenNewIds]));
+    } catch (err) {
+        console.warn('Impossible d\'enregistrer le badge NEW comme vu :', err?.message);
+    }
+    return true;
+}
+
+// Une fiche affiche le badge NEW si elle est récente ET pas encore consultée.
+function showsNewBadge(r) {
+    return isRecentResource(r) && !state.seenNewIds.has(String(r.id));
+}
 
 function isRecentResource(r) {
     if (!r || !r.created_at) return false;
@@ -515,6 +551,7 @@ closeAdminBtn.addEventListener('click', () => {
 // --- DATA FETCHING ---
 async function initData() {
     try {
+        loadSeenNewIds();
         await Promise.all([
             fetchCategories(),
             fetchNews(),
@@ -854,7 +891,7 @@ function renderResourceList() {
         const title = escapeHtml(r.title);
         const isActive = state.activeResource?.id === r.id;
         const isViewed = state.viewedIds.has(String(r.id));
-        const isRecent = isRecentResource(r);
+        const isRecent = showsNewBadge(r);
         const dot = isViewed
             ? `<div class="w-4 h-4 rounded-full shrink-0 bg-emerald-500 flex items-center justify-center" title="Fiche vue"><svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>`
             : `<div class="w-4 h-4 border-2 ${isActive ? 'border-indigo-400 bg-indigo-100' : 'border-slate-100'} rounded-full shrink-0"></div>`;
@@ -968,6 +1005,8 @@ async function loadResource(id, opts = {}) {
     if (!res) return;
 
     state.activeResource = res;
+    // Lire une fiche fait disparaître son badge NEW (suivi local, indépendant de "Vue").
+    markNewSeen(res.id);
     updateUrlForResource(res, { push: !opts.skipHashUpdate });
     renderResourceList();
 
