@@ -4,6 +4,16 @@ Historique de toutes les modifications apportées au projet.
 
 ---
 
+## 2026-07-01 — Badge NEW : disparaît à la lecture
+
+### Fiches — badge NEW
+- Le badge **NEW** d'une fiche récente disparaît désormais **dès qu'on ouvre/lit la fiche** (auparavant il restait affiché pendant les 14 jours `NEW_FICHE_DAYS`, quelle que soit la lecture)
+- Suivi **local** des fiches récentes déjà consultées via `localStorage` (clé `seen_new_ids_<userId>`, par utilisateur), **indépendant** du système « Vue »/progression qui reste 100 % manuel (bouton « Marquer vue » + table Supabase `views`, inchangés)
+- Le badge disparaît instantanément dans la sidebar à l'ouverture (via `markNewSeen` + `showsNewBadge = isRecent && !seenNew`), quelle que soit la provenance (liste, recherche, blog, parcours, lien partagé — tout passe par `loadResource`)
+- Limite assumée : le suivi n'est pas synchronisé entre appareils/navigateurs (le NEW peut réapparaître sur un autre appareil tant que la fiche a moins de 14 jours)
+
+---
+
 ## 2026-06-19 — Sync blog fiabilisé, correctifs actualités, fond unifié
 
 ### Synchronisation blog Substack
